@@ -1,0 +1,108 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model Product {
+  id          String       @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  price       Float
+  stock       Int
+  image       String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  cartItems   CartItem[]
+  rentalItems RentalItem[]
+}
+
+model Cart {
+  id        String     @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String     @db.ObjectId
+  products  CartItem[]
+  createdAt DateTime   @default(now())
+
+  User User @relation(fields: [userId], references: [id])
+}
+
+model CartItem {
+  id               String   @id @default(auto()) @map("_id") @db.ObjectId
+  productId        String   @db.ObjectId
+  quantity         Int
+  Cart             Cart?    @relation(fields: [cartId], references: [id])
+  cartId           String?  @db.ObjectId
+  Product          Product  @relation(fields: [productId], references: [id])
+  IsOrderProcessed Boolean? @default(false)
+}
+
+model Rental {
+  id        String       @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String       @db.ObjectId
+  products  RentalItem[]
+  startDate DateTime
+  endDate   DateTime
+  status    String       @default("pending")
+  createdAt DateTime     @default(now())
+
+  User User @relation(fields: [userId], references: [id])
+}
+
+model RentalItem {
+  id        String  @id @default(auto()) @map("_id") @db.ObjectId
+  productId String  @db.ObjectId
+  quantity  Int
+  Rental    Rental? @relation(fields: [rentalId], references: [id])
+  rentalId  String? @db.ObjectId
+  Product   Product @relation(fields: [productId], references: [id])
+}
+
+model User {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  firstName String
+  lastName  String
+  email     String   @unique
+  password  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  cart    Cart[]
+  rental  Rental[]
+  Booking Booking[]
+}
+
+model Payment {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  method     String // "card" or "cash"
+  status     String // "pending", "success", "failed"
+  cardName   String?
+  cardNumber String?
+  cardExpiry String?
+  cardCVV    String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model Travelpackage {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  destination String
+  price       Float
+  duration    Int
+  description String?
+  imageUrl    String?
+  Bookings    Booking[]
+}
+
+model Booking {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  packageId  String   @db.ObjectId
+  userId     String   @db.ObjectId
+  travelDate DateTime
+  status     String   @default("pending")
+
+  travelPackage Travelpackage @relation(fields: [packageId], references: [id])
+  user          User          @relation(fields: [userId], references: [id])
+}
