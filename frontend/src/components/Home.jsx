@@ -165,84 +165,16 @@ const Home = () => {
             </button>
           </form>
           <div className="flex flex-wrap justify-center gap-4">
-            <Link to="/events" className="px-6 py-3 bg-white text-blue-600 font-medium rounded-md hover:bg-gray-100 transition">Browse Events</Link>
             <Link to="/tour-details" className="px-6 py-3 bg-white text-blue-600 font-medium rounded-md hover:bg-gray-100 transition">Tour Plans</Link>
             <Link to="/camping-equipment" className="px-6 py-3 bg-white text-blue-600 font-medium rounded-md hover:bg-gray-100 transition">Camping Equipment</Link>
-            <Link
-              to={isAuthenticated ? "/create-event" : "/login"}
-              className="px-6 py-3 bg-transparent border-2 border-white text-white font-medium rounded-md hover:bg-white hover:bg-opacity-10 transition"
-            >
-              {isAuthenticated ? "Create Event" : "Login to Create Event"}
-            </Link>
+           
           </div>
         </div>
       </section>
 
       {/* Featured Events */}
-      <section className="py-16 px-4">
-        <div className="max-w-6xl mx-auto">
-          <h2 className="text-3xl font-bold text-center mb-12">
-            {searchTerm ? `Search Results: "${searchTerm}"` : "Featured Events"}
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {loading ? (
-              <p className="col-span-full text-center text-gray-500">Loading events...</p>
-            ) : filteredEvents.length === 0 ? (
-              <p className="col-span-full text-center text-gray-500">
-                {searchTerm ? `No events found matching "${searchTerm}"` : "No events available"}
-              </p>
-            ) : (
-              filteredEvents.map(event => (
-                <div className="bg-white rounded-lg shadow-md overflow-hidden transition-transform hover:transform hover:scale-105" key={event._id}>
-                  <div className="relative">
-                    <img
-                      src={getImageUrl(event.image)}
-                      alt={event.title}
-                      className="w-full h-48 object-cover"
-                      onError={handleImageError}
-                    />
-                    <span className="absolute top-4 left-4 bg-blue-500 text-white text-sm py-1 px-3 rounded-full">{event.category}</span>
-                  </div>
-                  <div className="p-6">
-                    <h3 className="text-xl font-semibold mb-2">{event.title}</h3>
-                    <p className="text-gray-600 mb-1"><span className="font-medium">Date:</span> {formatDate(event.date)}</p>
-                    <p className="text-gray-600 mb-4"><span className="font-medium">Location:</span> {event.location}</p>
-                    <Link
-                      to={`/events/${event._id}`}
-                      className="block text-center py-2 border border-blue-500 text-blue-500 rounded-md hover:bg-blue-500 hover:text-white transition"
-                    >
-                      View Details
-                    </Link>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-          {isAuthenticated && (
-            <div className="text-center mt-10">
-              <Link to="/my-events" className="text-blue-600 font-medium hover:underline">View My Events →</Link>
-            </div>
-          )}
-        </div>
-      </section>
+     
 
-      {/* Categories */}
-      <section className="py-16 px-4 bg-gray-100">
-        <div className="max-w-6xl mx-auto">
-          <h2 className="text-3xl font-bold text-center mb-12">Event Categories</h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-            {categories.map((category, index) => (
-              <Link
-                to={isAuthenticated ? `/category/${category.toLowerCase()}` : "/login"}
-                className="bg-white p-6 rounded-lg shadow-sm text-center hover:shadow-md transition"
-                key={index}
-              >
-                <span className="font-medium text-gray-800">{category}</span>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
 
       {/* How It Works */}
       <section className="py-16 px-4">
@@ -251,7 +183,7 @@ const Home = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="text-center">
               <div className="bg-blue-500 text-white w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl font-bold">1</div>
-              <h3 className="text-xl font-semibold mb-2">Find Events</h3>
+              <h3 className="text-xl font-semibold mb-2">Find Tour</h3>
               <p className="text-gray-600">Discover events matching your interests</p>
             </div>
             <div className="text-center">
@@ -268,21 +200,7 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Call to Action */}
-      <section className="py-16 px-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white">
-        <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-3xl font-bold mb-4">Ready to explore new destinations?</h2>
-          <p className="text-xl mb-8">Discover and book amazing travel experiences with our platform</p>
-          <Link
-            to={isAuthenticated ? "/create-event" : "/login"}
-            className="px-8 py-4 bg-white text-indigo-600 font-medium rounded-md hover:bg-gray-100 transition inline-block mr-4"
-          >
-            {isAuthenticated ? "Get Started" : "Login to Get Started"}
-          </Link>
-          <Link to="/feedbackview" className="px-8 py-4 bg-white text-indigo-600 font-medium rounded-md hover:bg-gray-100 transition inline-block">Testimonial</Link>
-
-        </div>
-      </section>
+     
 
       {/* New Camping Equipment Section */}
       <section className="py-16 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white">

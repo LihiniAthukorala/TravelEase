@@ -27,4 +27,32 @@ router.get('/:id', protect, admin, getPaymentById);
 router.put('/approve/:id', protect, admin, approvePayment);
 router.put('/reject/:id', protect, admin, rejectPayment);
 
+// Add this new route
+router.get('/tour-bookings/:tourId', protect, admin, async (req, res) => {
+  try {
+    const bookings = await Payment.find({
+      'purchaseDetails.name': { $exists: true },
+      'type': 'tour'
+    })
+    .populate('user', 'name email')
+    .sort({ createdAt: -1 });
+    
+    res.json(bookings);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+});
+
+// Add this new route for all tour bookings
+router.get('/all-tour-bookings', protect, admin, async (req, res) => {
+  try {
+    const bookings = await Payment.find({ type: 'tour' })
+      .populate('user', 'name email')
+      .sort({ createdAt: -1 });
+    res.json(bookings);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+});
+
 export default router;

@@ -45,6 +45,7 @@ import CartPage from './pages/cart/CartPage';
 
 // Add this import at the top with other imports
 import EditTour from './pages/admin/EditTour';
+import AllBookings from './pages/admin/AllBookings';
 
 const App = () => {
   const location = useLocation();
@@ -106,6 +107,7 @@ const App = () => {
                 <Route path='/admin/events/:id' element={<EventDetail />} />
                 <Route path="/admin/camping-equipment" element={<ManageCampingEquipment />} />
                 <Route path='/admin/edit-tour/:id' element={<EditTour />} />
+                <Route path='/admin/all-bookings' element={<AllBookings />} />
               </Route>
             </Routes>
           </main>

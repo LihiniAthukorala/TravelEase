@@ -9,7 +9,7 @@ const router = express.Router();
 
 router.post("/bookings", createBooking);
 router.get("/bookings/user/:userId", getUserBookings);
-router.get("/adminbookings", getAllBookings);
-router.post("/delete/:bookingId", deleteBooking);
+router.get("/all", getAllBookings); // Changed from adminbookings to all
+router.delete("/bookings/:bookingId", deleteBooking); // Changed from post to delete
 
 export default router;
