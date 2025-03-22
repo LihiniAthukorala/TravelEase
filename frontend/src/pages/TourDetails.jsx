@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import { useSnackbar } from 'notistack';
-import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 const TourDetails = () => {
@@ -18,83 +16,82 @@ const TourDetails = () => {
   const { enqueueSnackbar } = useSnackbar();
 
   useEffect(() => {
-    // If we don't have an ID, fetch all tours instead
-    if (!id) {
-      const fetchAllTours = async () => {
-        try {
-          const response = await axios.get('http://localhost:5001/api/tours');
-          setTours(response.data || []);
-          setLoading(false);
-        } catch (error) {
-          console.error('Error fetching tours:', error);
-          enqueueSnackbar('Failed to load tours', { variant: 'error' });
-          setTours([]);
-          setLoading(false);
-        }
-      };
-      
-      fetchAllTours();
-      return;
-    }
-
-    // If we have an ID, fetch the specific tour details
-    const fetchTourAndBookings = async () => {
-      if (!id) {
-        enqueueSnackbar('Invalid tour ID', { variant: 'error' });
-        navigate('/tours');
-        return;
-      }
-
+    const fetchTours = async () => {
       try {
-        const token = localStorage.getItem('token');
-        const tourResponse = await axios.get(`http://localhost:5001/api/tours/${id}`);
+        setLoading(true);
+        const response = await axios.get('http://localhost:5001/api/tours');
         
-        setTour(tourResponse.data);
-
-        // Only fetch bookings if user is authenticated
-        if (isAuthenticated && token) {
-          try {
-            const bookingsResponse = await axios.get(
-              `http://localhost:5001/api/booking/bookings/tour/${id}`,
-              { headers: { Authorization: `Bearer ${token}` } }
-            );
-            setUserBookings(bookingsResponse.data);
-          } catch (error) {
-            console.error('Error fetching bookings:', error);
-            // Don't show error for bookings fetch - non-critical
+        if (id) {
+          const specificTour = response.data.find(tour => tour._id === id);
+          if (specificTour) {
+            setTour(specificTour);
+            setTours([specificTour]);
+          } else {
+            enqueueSnackbar('Tour not found. Please try another tour.', { 
+              variant: 'warning',
+              autoHideDuration: 3000
+            });
+            navigate('/tours');
           }
+        } else {
+          setTours(response.data);
         }
-
-        setLoading(false);
       } catch (error) {
-        console.error('Error:', error);
-        enqueueSnackbar('Error fetching tour details', { variant: 'error' });
-        navigate('/tours'); // Redirect to all tours page on error
+        const errorMessage = error.response?.data?.message || 'Unable to load tours. Please try again later.';
+        console.error('Error fetching tours:', errorMessage);
+        enqueueSnackbar(errorMessage, { 
+          variant: 'error',
+          autoHideDuration: 4000
+        });
+        setTours([]);
+      } finally {
         setLoading(false);
-        navigate('/tours');
       }
     };
 
-    fetchTourAndBookings();
+    fetchTours();
+
+    // Fetch user bookings if authenticated and viewing specific tour
+    const fetchUserBookings = async () => {
+      if (isAuthenticated && id) {
+        try {
+          const token = localStorage.getItem('token');
+          const response = await axios.get(
+            `http://localhost:5001/api/booking/bookings/tour/${id}`,
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+          setUserBookings(response.data || []); // Handle empty response
+        } catch (error) {
+          console.error('Error fetching bookings:', error?.response?.data?.error || error.message);
+          setUserBookings([]); // Set empty array on error
+          enqueueSnackbar('Success', { 
+            variant: 'success',
+            autoHideDuration: 3000
+          });
+        }
+      }
+    };
+
+    if (isAuthenticated && id) {
+      fetchUserBookings();
+    }
   }, [id, isAuthenticated, navigate, enqueueSnackbar]);
 
-  // Filter tours based on search term
-  const filteredTours = id && tour 
-    ? [tour].filter(tour => 
-        tour.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        tour.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        tour.description.toLowerCase().includes(searchTerm.toLowerCase())
-      ) 
-    : tours.filter(tour => 
-        tour.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        tour.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (tour.description && tour.description.toLowerCase().includes(searchTerm.toLowerCase()))
-      );
+  // Improved filter function
+  const filteredTours = tours.filter(tour => {
+    const searchLower = searchTerm.toLowerCase();
+    return (
+      tour?.name?.toLowerCase().includes(searchLower) ||
+      tour?.location?.toLowerCase().includes(searchLower) ||
+      tour?.description?.toLowerCase().includes(searchLower)
+    );
+  });
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-screen">
+      <div className="flex flex-col justify-center items-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+        <p className="mt-4 text-gray-600">Loading tour information...</p>
       </div>
     );
   }
@@ -185,6 +182,14 @@ const TourDetails = () => {
                           duration: tour.duration,
                           location: tour.location,
                           date: tour.date
+                        }
+                      }}
+                      onClick={(e) => {
+                        if (!isAuthenticated) {
+                          e.preventDefault();
+                          navigate('/login', { 
+                            state: { returnUrl: `/tours/${tour._id}` }
+                          });
                         }
                       }}
                       className="block w-full text-center px-4 py-2 border border-transparent rounded-md text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 transition duration-150 ease-in-out"

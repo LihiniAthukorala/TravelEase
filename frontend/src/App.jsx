@@ -87,6 +87,10 @@ const App = () => {
 
               <Route path="/tour-details/:id" element={<TourDetails />} /> {/* Move this here */}
 
+              {/* Tour Routes */}
+              <Route path="/tours" element={<TourDetails />} />
+              <Route path="/tours/:id" element={<TourDetails />} />
+
               {/* User routes */}
               <Route element={<ProtectedRoute />}>
                 <Route path='/dashboard' element={<UserDashboard />} />

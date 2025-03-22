@@ -79,6 +79,34 @@ export const getAllBookings = async (req, res) => {
   }
 };
 
+// Get bookings for a specific tour
+export const getBookingsByTour = async (req, res) => {
+  const { tourId } = req.params;
+
+  try {
+    const bookings = await prisma.booking.findMany({
+      where: {
+        packageId: tourId
+      },
+      include: {
+        user: true,
+        travelPackage: true
+      }
+    });
+
+    if (!bookings || bookings.length === 0) {
+      return res.status(200).json([]); // Return empty array if no bookings found
+    }
+
+    return res.status(200).json(bookings);
+  } catch (error) {
+    console.error("Error fetching tour bookings:", error);
+    return res.status(500).json({ 
+      error: "Something went wrong while fetching tour bookings." 
+    });
+  }
+};
+
 export const deleteBooking = async (req, res) => {
   const { bookingId } = req.params;
 
