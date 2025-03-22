@@ -3,24 +3,28 @@ import Tour from '../models/Tour.js';
 export const createTour = async (req, res) => {
   try {
     const { name, description, location, price, duration, date } = req.body;
-    const image = req.file ? req.file.path : null;
-
-    if (!image) {
+    
+    // Check if image was uploaded
+    if (!req.file) {
       return res.status(400).json({ message: 'Image is required' });
     }
+
+    // Create the image path
+    const image = `uploads/${req.file.filename}`;
 
     const tour = await Tour.create({
       name,
       description,
       location,
-      price,
-      duration,
+      price: Number(price),
+      duration: Number(duration),
       date,
       image
     });
 
     res.status(201).json(tour);
   } catch (error) {
+    console.error('Tour creation error:', error);
     res.status(400).json({ message: error.message });
   }
 };

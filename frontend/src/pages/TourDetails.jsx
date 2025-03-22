@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useSnackbar } from 'notistack';
 import { Link } from 'react-router-dom';
@@ -7,6 +7,7 @@ import { useAuth } from '../context/AuthContext';
 
 const TourDetails = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [tour, setTour] = useState(null);
   const [loading, setLoading] = useState(true);
   const [userBookings, setUserBookings] = useState([]);
@@ -16,27 +17,43 @@ const TourDetails = () => {
 
   useEffect(() => {
     const fetchTourAndBookings = async () => {
+      if (!id) {
+        enqueueSnackbar('Invalid tour ID', { variant: 'error' });
+        navigate('/tours');
+        return;
+      }
+
       try {
         const token = localStorage.getItem('token');
-        const [tourResponse, bookingsResponse] = await Promise.all([
-          axios.get(`http://localhost:5001/api/tours/${id}`),
-          axios.get(`http://localhost:5001/api/bookings/tour/${id}`, {
-            headers: { Authorization: `Bearer ${token}` }
-          })
-        ]);
-
+        const tourResponse = await axios.get(`http://localhost:5001/api/tours/${id}`);
+        
         setTour(tourResponse.data);
-        setUserBookings(bookingsResponse.data);
+
+        // Only fetch bookings if user is authenticated
+        if (isAuthenticated && token) {
+          try {
+            const bookingsResponse = await axios.get(
+              `http://localhost:5001/api/booking/bookings/tour/${id}`,
+              { headers: { Authorization: `Bearer ${token}` } }
+            );
+            setUserBookings(bookingsResponse.data);
+          } catch (error) {
+            console.error('Error fetching bookings:', error);
+            // Don't show error for bookings fetch - non-critical
+          }
+        }
+
         setLoading(false);
       } catch (error) {
         console.error('Error:', error);
         enqueueSnackbar('Error fetching tour details', { variant: 'error' });
         setLoading(false);
+        navigate('/tours');
       }
     };
 
     fetchTourAndBookings();
-  }, [id, enqueueSnackbar]);
+  }, [id, isAuthenticated, navigate, enqueueSnackbar]);
 
   // Filter tours based on search term
   const filteredTours = tour ? [tour].filter(tour =>

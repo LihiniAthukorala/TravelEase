@@ -85,7 +85,7 @@ const App = () => {
               <Route path="/cart" element={<CartPage />} />
               <Route path="/rental-checkout" element={<RentalCheckoutPage />} />
 
-              <Route path="/tour-details" element={<TourDetails />} /> {/* Move this here */}
+              <Route path="/tour-details/:id" element={<TourDetails />} /> {/* Move this here */}
 
               {/* User routes */}
               <Route element={<ProtectedRoute />}>
