@@ -156,6 +156,9 @@ const AdminDashboard = () => {
           <Link to="/admin/events" className="flex items-center px-6 py-3 text-gray-300 hover:bg-gray-800 hover:text-gray-100">
             <span className="ml-3">Events</span>
           </Link>
+          <Link to="/admin/manage-tour" className="flex items-center px-6 py-3 text-gray-300 hover:bg-gray-800 hover:text-gray-100">
+            <span className="ml-3">Manage Tour</span>
+          </Link>
           <Link to="/admin/payment-approvals" className="flex items-center px-6 py-3 text-gray-300 hover:bg-gray-800 hover:text-gray-100">
             <span className="ml-3">Payment Approvals</span>
           </Link>

@@ -166,6 +166,7 @@ const Home = () => {
           </form>
           <div className="flex flex-wrap justify-center gap-4">
             <Link to="/events" className="px-6 py-3 bg-white text-blue-600 font-medium rounded-md hover:bg-gray-100 transition">Browse Events</Link>
+            <Link to="/tour-details" className="px-6 py-3 bg-white text-blue-600 font-medium rounded-md hover:bg-gray-100 transition">Tour Plans</Link>
             <Link to="/camping-equipment" className="px-6 py-3 bg-white text-blue-600 font-medium rounded-md hover:bg-gray-100 transition">Camping Equipment</Link>
             <Link
               to={isAuthenticated ? "/create-event" : "/login"}

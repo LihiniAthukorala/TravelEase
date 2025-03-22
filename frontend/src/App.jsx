@@ -30,12 +30,14 @@ import EventRegistration from './Events/EventRegistration';
 import UpdateFeedback from './pages/feedback/UpdateFeedback';
 import UserFeedbackView from './pages/feedback/UserFeedbackView';
 import EditEvent from './Events/EditEvent';
-
+import ManageTour from './pages/admin/ManageTour';
+import CreateTour from './pages/admin/CreateTour';
 // Import new components
 import CampingEquipment from './pages/CampingEquipment';
 import CampingEquipmentDetail from './pages/CampingEquipmentDetail';
 import ManageCampingEquipment from './pages/admin/ManageCampingEquipment';
 import RentalCheckoutPage from './pages/cart/RentalCheckoutPage';
+import TourDetails from './pages/TourDetails';
 
 // Import CartProvider and CartPage
 import { CartProvider } from './context/CartContext';
@@ -74,6 +76,8 @@ const App = () => {
               <Route path="/cart" element={<CartPage />} />
               <Route path="/rental-checkout" element={<RentalCheckoutPage />} />
 
+              <Route path="/tour-details" element={<TourDetails />} /> {/* Move this here */}
+
               {/* User routes */}
               <Route element={<ProtectedRoute />}>
                 <Route path='/dashboard' element={<UserDashboard />} />
@@ -85,7 +89,8 @@ const App = () => {
                 <Route path="/payments/history" element={<UserPaymentHistory />} />
                 <Route path="/payments/:paymentId/edit" element={<EditPayment />} />
               </Route>
-              
+              <Route path='/admin/manage-tour' element={<ManageTour />} />
+              <Route path='/admin/create-tour' element={<CreateTour />} />
               {/* Admin routes */}
               <Route element={<ProtectedRoute adminOnly={true} />}>
                 <Route path='/admin-dashboard' element={<AdminDashboard />} />

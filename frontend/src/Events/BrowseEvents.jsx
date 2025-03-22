@@ -92,7 +92,7 @@ const BrowseEvents = () => {
         <h1 className="text-3xl font-bold">All Events</h1>
         <div className="flex space-x-2">
           <Link to="/" className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300">
-            Back to Home
+            Back to 
           </Link>
           {isAuthenticated && (
             <Link to="/create-event" className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
