@@ -43,6 +43,9 @@ import TourDetails from './pages/TourDetails';
 import { CartProvider } from './context/CartContext';
 import CartPage from './pages/cart/CartPage';
 
+// Add this import at the top with other imports
+import EditTour from './pages/admin/EditTour';
+
 const App = () => {
   const location = useLocation();
   const hideHeader = ['/admin-dashboard', '/admin/events', '/admin/users', '/admin/approvals'].includes(location.pathname);
@@ -102,6 +105,7 @@ const App = () => {
                 <Route path='/admin/profile' element={<AdminUpdateProfile />} />
                 <Route path='/admin/events/:id' element={<EventDetail />} />
                 <Route path="/admin/camping-equipment" element={<ManageCampingEquipment />} />
+                <Route path='/admin/edit-tour/:id' element={<EditTour />} />
               </Route>
             </Routes>
           </main>
