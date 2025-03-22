@@ -34,6 +34,10 @@ export const AuthProvider = ({ children }) => {
 
       try {
         const res = await axios.get('http://localhost:5001/api/auth/me');
+        // Add _id property if only id exists
+        if (res.data.user && res.data.user.id && !res.data.user._id) {
+          res.data.user._id = res.data.user.id;
+        }
         setUser(res.data.user);
       } catch (error) {
         console.error('Error loading user:', error);
@@ -49,21 +53,42 @@ export const AuthProvider = ({ children }) => {
 
   // Login function
   const login = async (email, password) => {
+    setLoading(true);
     try {
-      const res = await axios.post('http://localhost:5001/api/auth/login', { email, password });
-      const { token: newToken, user: userData } = res.data;
+      const response = await axios.post('http://localhost:5001/api/auth/login', {
+        email,
+        password
+      });
       
-      localStorage.setItem('token', newToken);
-      setToken(newToken);
-      setUser(userData);
-      
-      enqueueSnackbar('Login successful!', { variant: 'success' });
-      
-      return userData;
+      if (response.data.token) {
+        localStorage.setItem('token', response.data.token);
+        setToken(response.data.token);
+        
+        // Ensure user object has consistent ID format
+        if (response.data.user) {
+          const userData = { ...response.data.user };
+          
+          // Ensure we have _id property
+          if (userData.id && !userData._id) {
+            userData._id = userData.id;
+          }
+          
+          // Always convert _id to string
+          if (userData._id) {
+            userData._id = String(userData._id);
+          }
+          
+          setUser(userData);
+          console.log('User authenticated:', userData);
+          return true;
+        }
+      }
+      return false;
     } catch (error) {
-      const message = error.response?.data?.message || 'Login failed';
-      enqueueSnackbar(message, { variant: 'error' });
+      console.error('Login error:', error);
       throw error;
+    } finally {
+      setLoading(false);
     }
   };
 

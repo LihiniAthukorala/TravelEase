@@ -79,7 +79,7 @@ const ManageFeedback = () => {
       <div className="fixed inset-y-0 left-0 w-64 bg-gray-900 text-white">
         <div className="p-6">
           <h2 className="text-2xl font-bold">Admin Panel</h2>
-          <p className="text-gray-400 text-sm">Event Management System</p>
+          <p className="text-gray-400 text-sm">Online Tourism and Travel Management System</p>
         </div>
         <nav className="mt-5">
           <Link to="/admin-dashboard" className="flex items-center px-6 py-3 text-gray-300 hover:bg-gray-800 hover:text-gray-100">

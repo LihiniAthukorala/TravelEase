@@ -147,8 +147,8 @@ const Home = () => {
         className="relative bg-cover bg-center text-white py-20 px-4"
         style={{ backgroundImage: "url('img2.jpeg')" }}>
         <div className="max-w-6xl mx-auto text-center">
-          <h1 className="text-5xl font-bold mb-4">Discover Amazing Events</h1>
-          <p className="text-xl mb-8">Find and manage the perfect events for every occasion</p>
+          <h1 className="text-5xl font-bold mb-4">Discover Amazing Events & Gear</h1>
+          <p className="text-xl mb-8">Find and book travel experiences and get the equipment you need</p>
           <form onSubmit={handleSearchSubmit} className="max-w-md mx-auto mb-8 flex">
             <input
               type="text"
@@ -166,6 +166,7 @@ const Home = () => {
           </form>
           <div className="flex flex-wrap justify-center gap-4">
             <Link to="/events" className="px-6 py-3 bg-white text-blue-600 font-medium rounded-md hover:bg-gray-100 transition">Browse Events</Link>
+            <Link to="/camping-equipment" className="px-6 py-3 bg-white text-blue-600 font-medium rounded-md hover:bg-gray-100 transition">Camping Equipment</Link>
             <Link
               to={isAuthenticated ? "/create-event" : "/login"}
               className="px-6 py-3 bg-transparent border-2 border-white text-white font-medium rounded-md hover:bg-white hover:bg-opacity-10 transition"
@@ -269,8 +270,8 @@ const Home = () => {
       {/* Call to Action */}
       <section className="py-16 px-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white">
         <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-3xl font-bold mb-4">Ready to host your own event?</h2>
-          <p className="text-xl mb-8">Create and manage events easily with our platform</p>
+          <h2 className="text-3xl font-bold mb-4">Ready to explore new destinations?</h2>
+          <p className="text-xl mb-8">Discover and book amazing travel experiences with our platform</p>
           <Link
             to={isAuthenticated ? "/create-event" : "/login"}
             className="px-8 py-4 bg-white text-indigo-600 font-medium rounded-md hover:bg-gray-100 transition inline-block mr-4"
@@ -279,6 +280,17 @@ const Home = () => {
           </Link>
           <Link to="/feedbackview" className="px-8 py-4 bg-white text-indigo-600 font-medium rounded-md hover:bg-gray-100 transition inline-block">Testimonial</Link>
 
+        </div>
+      </section>
+
+      {/* New Camping Equipment Section */}
+      <section className="py-16 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
+        <div className="max-w-6xl mx-auto text-center">
+          <h2 className="text-3xl font-bold mb-4">Shop Camping Equipment</h2>
+          <p className="text-xl mb-8">Find all the gear you need for your next adventure</p>
+          <Link to="/camping-equipment" className="px-8 py-4 bg-white text-blue-600 font-medium rounded-md hover:bg-gray-100 transition inline-block">
+            View Equipment
+          </Link>
         </div>
       </section>
     </div>

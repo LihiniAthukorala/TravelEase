@@ -1,10 +1,12 @@
 import React, { useContext, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
+import { useCart } from '../context/CartContext';
 
 const Header = () => {
   const { user, logout } = useContext(AuthContext);
   const [isHovered, setIsHovered] = useState(false);
+  const { cartItems } = useCart();
 
   return (
     <header className="bg-gradient-to-r from-blue-500 via-blue-500 to-blue-600 text-white p-6 shadow-lg">
@@ -58,6 +60,18 @@ const Header = () => {
                       <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
                     </svg>
                     Dashboard
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/cart" className="relative text-gray-600 hover:text-blue-600">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                    {cartItems.length > 0 && (
+                      <span className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">
+                        {cartItems.length}
+                      </span>
+                    )}
                   </Link>
                 </li>
                 <li>

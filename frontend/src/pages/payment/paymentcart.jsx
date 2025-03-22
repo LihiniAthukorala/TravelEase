@@ -1,13 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSnackbar } from 'notistack';
 import { useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import './PaymentForm.css';
+import { useCart } from '../../context/CartContext';
 
 function PaymentForm() {
   const { enqueueSnackbar } = useSnackbar();
   const location = useLocation();
   const navigate = useNavigate();
+  const { cartItems, updateCartItem, removeFromCart, calculateTotal, clearCart } = useCart();
+  
   // Get event registration data from location state if available
   const eventRegistrationData = location.state?.registrationData || {};
   
@@ -28,6 +31,45 @@ function PaymentForm() {
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [displayCartItems, setDisplayCartItems] = useState([]);
+
+  // Fetch cart items when component loads
+  useEffect(() => {
+    if (cartItems && cartItems.length > 0) {
+      setDisplayCartItems(cartItems);
+      // Update amount based on cart total if not pre-set
+      if (!location.state?.amount) {
+        setFormData(prev => ({...prev, amount: calculateTotal().toFixed(2)}));
+      }
+    }
+  }, [cartItems, calculateTotal]);
+
+  const handleQuantityChange = async (cartItemId, newQuantity) => {
+    if (newQuantity < 1) return;
+    
+    const success = await updateCartItem(cartItemId, newQuantity);
+    if (success) {
+      // Update local state to reflect changes
+      setDisplayCartItems(prev => 
+        prev.map(item => 
+          item._id === cartItemId ? {...item, quantity: newQuantity} : item
+        )
+      );
+      
+      // Update the amount field
+      setFormData(prev => ({...prev, amount: calculateTotal().toFixed(2)}));
+    }
+  };
+
+  const handleRemoveItem = async (cartItemId) => {
+    if (window.confirm('Are you sure you want to remove this item?')) {
+      const success = await removeFromCart(cartItemId);
+      if (success) {
+        setDisplayCartItems(prev => prev.filter(item => item._id !== cartItemId));
+        setFormData(prev => ({...prev, amount: calculateTotal().toFixed(2)}));
+      }
+    }
+  };
 
   const validateCardNumber = (cardNumber) => {
     const cardNumberRegex = /^[0-9]{16}$/;
@@ -144,17 +186,63 @@ function PaymentForm() {
           return;
         }
 
-        // Prepare payment data for API
-        const paymentData = {
-          eventId: eventRegistrationData.eventId,
-          amount: parseFloat(formData.amount),
-          cardNumber: formData.cardNumber.replace(/\s/g, ''),
-          cardHolder: formData.cardHolder,
-          expiryDate: formData.expiryDate,
-          cvv: formData.cvv,
-          numberOfTickets: eventRegistrationData.numberOfTickets || 1,
-          specialRequirements: eventRegistrationData.specialRequirements || ''
-        };
+        // Construct payment data based on what we're paying for
+        let paymentData;
+        
+        if (eventRegistrationData.eventId) {
+          // Event registration payment
+          paymentData = {
+            type: 'event',
+            eventId: eventRegistrationData.eventId,
+            amount: parseFloat(formData.amount),
+            cardDetails: {
+              cardNumber: formData.cardNumber.replace(/\s/g, ''),
+              cardHolder: formData.cardHolder,
+              expiryDate: formData.expiryDate,
+              cvv: formData.cvv
+            },
+            numberOfTickets: eventRegistrationData.numberOfTickets || 1,
+            specialRequirements: eventRegistrationData.specialRequirements || ''
+          };
+        } else if (displayCartItems.length > 0) {
+          // Cart purchase payment
+          paymentData = {
+            type: 'cart',
+            amount: parseFloat(formData.amount),
+            cardDetails: {
+              cardNumber: formData.cardNumber.replace(/\s/g, ''),
+              cardHolder: formData.cardHolder,
+              expiryDate: formData.expiryDate,
+              cvv: formData.cvv
+            },
+            items: displayCartItems.map(item => ({
+              equipmentId: item.equipmentId,
+              quantity: item.quantity,
+              price: item.price
+            }))
+          };
+        } else {
+          // Generic payment (fallback)
+          paymentData = {
+            type: 'general',
+            amount: parseFloat(formData.amount),
+            cardDetails: {
+              cardNumber: formData.cardNumber.replace(/\s/g, ''),
+              cardHolder: formData.cardHolder,
+              expiryDate: formData.expiryDate,
+              cvv: formData.cvv
+            }
+          };
+        }
+        
+        console.log('Submitting payment data:', {
+          ...paymentData,
+          cardDetails: { 
+            ...paymentData.cardDetails,
+            cardNumber: 'XXXX-XXXX-XXXX-' + paymentData.cardDetails.cardNumber.slice(-4),
+            cvv: '***'
+          }
+        });
         
         // Make the API call
         const response = await axios.post('http://localhost:5001/api/payments/submit', 
@@ -168,6 +256,12 @@ function PaymentForm() {
         );
 
         if (response.data.success) {
+          // For cart purchases, clear the cart after successful payment
+          if (displayCartItems.length > 0) {
+            // This assumes you have a clearCart function in your cart context
+            await clearCart();
+          }
+          
           enqueueSnackbar('Payment submitted successfully! Waiting for admin approval.', { 
             variant: 'success' 
           });
@@ -177,13 +271,25 @@ function PaymentForm() {
               paymentId: response.data.payment.id 
             } 
           });
+        } else {
+          throw new Error(response.data.message || 'Payment submission failed');
         }
       } catch (error) {
         console.error('Payment submission error:', error);
+        
+        // Enhanced error logging
+        if (error.response) {
+          console.error('Error response data:', error.response.data);
+          console.error('Error response status:', error.response.status);
+          console.error('Error response headers:', error.response.headers);
+        }
+        
         let errorMessage = 'Failed to process payment';
         
-        if (error.response) {
-          errorMessage = error.response.data.message || errorMessage;
+        if (error.response?.data?.message) {
+          errorMessage = error.response.data.message;
+        } else if (error.message) {
+          errorMessage = error.message;
         }
         
         enqueueSnackbar(errorMessage, { variant: 'error' });
@@ -195,20 +301,6 @@ function PaymentForm() {
     }
   };
 
-  const getInputStyle = (fieldName) => ({
-    width: '100%',
-    padding: '8px',
-    border: errors[fieldName] ? '1px solid red' : '1px solid #ddd',
-    borderRadius: '4px',
-    fontSize: '14px'
-  });
-
-  const errorStyle = {
-    color: 'red',
-    fontSize: '12px',
-    marginTop: '5px'
-  };
-
   return (
     <div className="payment-page-container">
       <div className="payment-form-container">
@@ -218,6 +310,66 @@ function PaymentForm() {
             <i className="fas fa-lock"></i> Secure Payment
           </div>
         </div>
+        
+        {/* Cart Items Section (New) */}
+        {displayCartItems && displayCartItems.length > 0 && (
+          <div className="cart-items-section">
+            <div className="section-title">Cart Items</div>
+            <div className="cart-items-list">
+              {displayCartItems.map(item => (
+                <div key={item._id} className="cart-item">
+                  <div className="cart-item-info">
+                    <div className="cart-item-image">
+                      <img 
+                        src={item.image ? `http://localhost:5001${item.image}` : '/images/default-equipment.jpg'}
+                        alt={item.name}
+                        onError={(e) => { e.target.src = '/images/default-equipment.jpg' }}
+                      />
+                    </div>
+                    <div className="cart-item-details">
+                      <h4>{item.name}</h4>
+                      <p>LKR {item.price.toFixed(2)} × {item.quantity}</p>
+                      {item.isRental && (
+                        <p className="rental-dates">
+                          Rental: {new Date(item.startDate).toLocaleDateString()} - {new Date(item.endDate).toLocaleDateString()}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="cart-item-actions">
+                    <div className="quantity-control">
+                      <button 
+                        type="button"
+                        onClick={() => handleQuantityChange(item._id, item.quantity - 1)}
+                        disabled={item.quantity <= 1}
+                      >
+                        -
+                      </button>
+                      <span>{item.quantity}</span>
+                      <button 
+                        type="button"
+                        onClick={() => handleQuantityChange(item._id, item.quantity + 1)}
+                      >
+                        +
+                      </button>
+                    </div>
+                    <button 
+                      type="button"
+                      className="remove-item"
+                      onClick={() => handleRemoveItem(item._id)}
+                    >
+                      ×
+                    </button>
+                  </div>
+                </div>
+              ))}
+              <div className="cart-total">
+                <span>Total:</span>
+                <span>LKR {calculateTotal().toFixed(2)}</span>
+              </div>
+            </div>
+          </div>
+        )}
         
         {eventRegistrationData.eventName && (
           <div className="event-info-card">
@@ -327,7 +479,7 @@ function PaymentForm() {
                 placeholder="1500.00"
                 step="0.01"
                 required
-                readOnly={location.state?.amount}
+                readOnly={location.state?.amount || displayCartItems.length > 0}
               />
               {errors.amount && <div className="error">{errors.amount}</div>}
             </div>

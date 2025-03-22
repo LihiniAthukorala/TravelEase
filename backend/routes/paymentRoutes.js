@@ -1,16 +1,16 @@
 import express from 'express';
+import { protect, admin } from '../middleware/authMiddleware.js';
 import { 
-  submitPayment, 
-  getPendingPayments, 
-  approvePayment, 
-  rejectPayment,
+  submitPayment,
+  getPaymentById,
   getUserPayments,
+  approvePayment,
+  rejectPayment,
+  getPendingPayments,
   updatePayment,
   deletePayment,
-  getAllPayments,
-  getPaymentById  // Add this import
+  getAllPayments
 } from '../controllers/paymentController.js';
-import { protect, admin } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
@@ -23,7 +23,7 @@ router.delete('/:id', protect, deletePayment);
 // Admin routes
 router.get('/', protect, admin, getAllPayments);
 router.get('/pending', protect, admin, getPendingPayments);
-router.get('/:id', protect, admin, getPaymentById);  // Add this route
+router.get('/:id', protect, admin, getPaymentById);
 router.put('/approve/:id', protect, admin, approvePayment);
 router.put('/reject/:id', protect, admin, rejectPayment);
 

@@ -6,10 +6,10 @@ const PaymentSchema = new mongoose.Schema({
     ref: 'User',
     required: [true, 'User ID is required']
   },
-  event: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Event',
-    required: [true, 'Event ID is required']
+  type: {
+    type: String,
+    enum: ['event', 'cart', 'general'],
+    required: [true, 'Payment type is required']
   },
   amount: {
     type: Number,
@@ -39,6 +39,15 @@ const PaymentSchema = new mongoose.Schema({
     enum: ['pending', 'approved', 'rejected'],
     default: 'pending'
   },
+  // For event registrations
+  event: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Event',
+    // Only required for event-type payments
+    required: function() {
+      return this.type === 'event';
+    }
+  },
   numberOfTickets: {
     type: Number,
     default: 1,
@@ -49,6 +58,22 @@ const PaymentSchema = new mongoose.Schema({
     default: '',
     trim: true
   },
+  // For cart purchases
+  items: [{
+    equipmentId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'CampingEquipment'
+    },
+    quantity: {
+      type: Number,
+      required: true,
+      default: 1
+    },
+    price: {
+      type: Number,
+      required: true
+    }
+  }],
   timestamp: {
     type: Date,
     default: Date.now

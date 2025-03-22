@@ -1,117 +1,111 @@
 import Payment from '../models/Payment.js';
 import Event from '../models/Event.js';
+import User from '../models/User.js';
+import Cart from '../models/Cart.js';
+import CampingEquipment from '../models/CampingEquipment.js';
 import mongoose from 'mongoose';
 
-// Submit a new payment
+// Submit payment
 export const submitPayment = async (req, res) => {
   try {
-    const { 
-      eventId, 
-      amount, 
-      cardNumber, 
-      cardHolder, 
-      expiryDate, 
-      cvv,
-      numberOfTickets = 1,
-      specialRequirements = ''
-    } = req.body;
-
+    const { type, amount, cardDetails, numberOfTickets, specialRequirements, eventId, items } = req.body;
+    
     // Validate required fields
-    if (!eventId || !amount || !cardNumber || !cardHolder || !expiryDate) {
+    if (!type || !amount || !cardDetails) {
       return res.status(400).json({
         success: false,
-        message: 'Missing required payment information',
-        missingFields: [
-          !eventId && 'eventId',
-          !amount && 'amount',
-          !cardNumber && 'cardNumber',
-          !cardHolder && 'cardHolder',
-          !expiryDate && 'expiryDate'
-        ].filter(Boolean)
+        message: 'Missing required payment information'
       });
     }
 
-    // Validate event exists
-    const event = await Event.findById(eventId);
-    if (!event) {
-      return res.status(404).json({
-        success: false,
-        message: 'Event not found'
-      });
-    }
-
-    // Check if event is approved
-    if (!event.isApproved) {
+    // Validate type-specific required fields
+    if (type === 'event' && !eventId) {
       return res.status(400).json({
         success: false,
-        message: 'Cannot register for unapproved event'
+        message: 'Event ID is required for event payments'
       });
     }
-
-    // Check if user is already registered
-    if (event.attendees.includes(req.user.id)) {
+    
+    if (type === 'cart' && (!items || items.length === 0)) {
       return res.status(400).json({
         success: false,
-        message: 'You are already registered for this event'
+        message: 'Items are required for cart payments'
       });
     }
 
-    // Check if event is at capacity
-    if (event.attendees.length >= event.capacity) {
+    // Validate card details
+    if (!cardDetails.cardNumber || !cardDetails.cardHolder || !cardDetails.expiryDate) {
       return res.status(400).json({
         success: false,
-        message: 'Event is at full capacity'
+        message: 'Missing required card details'
       });
     }
 
-    // Check if there's already a pending payment for this user and event
-    const existingPayment = await Payment.findOne({
-      user: req.user.id,
-      event: eventId,
-      status: 'pending'
-    });
-
-    if (existingPayment) {
-      return res.status(400).json({
-        success: false,
-        message: 'You already have a pending payment for this event'
-      });
-    }
-
-    // Create new payment
+    // Create base payment object
     const payment = new Payment({
-      user: req.user.id,
-      event: eventId,
+      user: req.user._id,
+      type, // Add payment type
       amount,
       cardDetails: {
-        cardNumber,
-        cardHolder,
-        expiryDate
+        // Store only last 4 digits of card number for security
+        cardNumber: `XXXX-XXXX-XXXX-${cardDetails.cardNumber.slice(-4)}`,
+        cardHolder: cardDetails.cardHolder,
+        expiryDate: cardDetails.expiryDate
       },
-      numberOfTickets,
-      specialRequirements,
-      status: 'pending'
+      status: 'pending' // All payments start as pending until approved by admin
     });
 
-    const savedPayment = await payment.save();
+    // Handle different payment types
+    if (type === 'event' && eventId) {
+      // Validate event exists
+      const event = await Event.findById(eventId);
+      if (!event) {
+        return res.status(400).json({
+          success: false,
+          message: 'Event not found'
+        });
+      }
 
+      payment.event = eventId;
+      payment.numberOfTickets = numberOfTickets || 1;
+      payment.specialRequirements = specialRequirements;
+      
+      // Verify payment amount matches event price * number of tickets
+      const expectedAmount = event.price * payment.numberOfTickets;
+      if (Math.abs(amount - expectedAmount) > 0.01) { // Allow small difference for floating point
+        return res.status(400).json({
+          success: false,
+          message: `Invalid payment amount. Expected: ${expectedAmount}, Received: ${amount}`
+        });
+      }
+    } 
+    else if (type === 'cart' && items && items.length > 0) {
+      // Handle cart payment
+      payment.items = items;
+      
+      // Optional: Verify cart items and amount
+      // This would require fetching each item and comparing prices
+    }
+
+    // Save the payment
+    await payment.save();
+
+    // Return success response
     res.status(201).json({
       success: true,
       message: 'Payment submitted successfully and awaiting approval',
       payment: {
-        id: savedPayment._id,
-        amount: savedPayment.amount,
-        status: savedPayment.status,
-        timestamp: savedPayment.timestamp
+        id: payment._id,
+        amount: payment.amount,
+        status: payment.status
       }
     });
   } catch (error) {
     console.error('Payment submission error:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to submit payment',
-      error: error.message,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      message: 'Failed to process payment',
+      error: error.message
     });
   }
 };

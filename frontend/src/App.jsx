@@ -31,56 +31,77 @@ import UpdateFeedback from './pages/feedback/UpdateFeedback';
 import UserFeedbackView from './pages/feedback/UserFeedbackView';
 import EditEvent from './Events/EditEvent';
 
+// Import new components
+import CampingEquipment from './pages/CampingEquipment';
+import CampingEquipmentDetail from './pages/CampingEquipmentDetail';
+import ManageCampingEquipment from './pages/admin/ManageCampingEquipment';
+import RentalCheckoutPage from './pages/cart/RentalCheckoutPage';
+
+// Import CartProvider and CartPage
+import { CartProvider } from './context/CartContext';
+import CartPage from './pages/cart/CartPage';
+
 const App = () => {
   const location = useLocation();
   const hideHeader = ['/admin-dashboard', '/admin/events', '/admin/users', '/admin/approvals'].includes(location.pathname);
 
   return (
     <AuthProvider>
-      <div className="min-h-screen flex flex-col">
-        {!hideHeader && <Header />}
-        <main className="flex-grow">
-          <Routes>
-            {/* Public routes */}
-            <Route path='/' element={<Home />} />
-            <Route path='/login' element={<Login />} />
-            <Route path='/register' element={<Register />} />
-            <Route path='/payment' element={<PaymentCart />} />
-            <Route path='/pending-approval' element={<PendingApproval />} />
-            <Route path='/events' element={<BrowseEvents />} />
-            <Route path='/events/:id' element={<EventDetail />} />
-            <Route path='/feedback' element={<Feedback />} />
-            <Route path='/managefeedback' element={<Managefeedback />} />
-            <Route path='/feedbackview' element={<Feedbackview />} />
-            <Route path='/update-feedback' element={<UpdateFeedback />} />
-            <Route path='/user-feedback' element={<UserFeedbackView />} />
+      <CartProvider>
+        <div className="min-h-screen flex flex-col">
+          {!hideHeader && <Header />}
+          <main className="flex-grow">
+            <Routes>
+              {/* Public routes */}
+              <Route path='/' element={<Home />} />
+              <Route path='/login' element={<Login />} />
+              <Route path='/register' element={<Register />} />
+              <Route path='/payment' element={<PaymentCart />} />
+              <Route path='/pending-approval' element={<PendingApproval />} />
+              <Route path='/events' element={<BrowseEvents />} />
+              <Route path='/events/:id' element={<EventDetail />} />
+              <Route path='/feedback' element={<Feedback />} />
+              <Route path='/managefeedback' element={<Managefeedback />} />
+              <Route path='/feedbackview' element={<Feedbackview />} />
+              <Route path='/update-feedback' element={<UpdateFeedback />} />
+              <Route path='/user-feedback' element={<UserFeedbackView />} />
 
-            {/* User routes */}
-            <Route element={<ProtectedRoute />}>
-              <Route path='/dashboard' element={<UserDashboard />} />
-              <Route path='/update-profile' element={<UpdateProfile />} />
-              <Route path='/create-event' element={<CreateEvent />} />
-              <Route path='/my-events' element={<MyEvents />} />
-              <Route path='/events/:id/edit' element={<EditEvent />} />
-              <Route path="/events/:id/register" element={<EventRegistration />} />
-              <Route path="/payments/history" element={<UserPaymentHistory />} />
-              <Route path="/payments/:paymentId/edit" element={<EditPayment />} />
-            </Route>
-            
-            {/* Admin routes */}
-            <Route element={<ProtectedRoute adminOnly={true} />}>
-              <Route path='/admin-dashboard' element={<AdminDashboard />} />
-              <Route path='/admin/users' element={<AdminUsers />} />
-              <Route path='/admin/events' element={<AdminEvents />} />
-              <Route path='/admin/approvals' element={<AdminEvents />} />
-              <Route path='/admin/payment-approvals' element={<PaymentApproval />} />
-              <Route path='/admin/payments/:id' element={<PaymentDetails />} />
-              <Route path='/admin/profile' element={<AdminUpdateProfile />} />
-              <Route path='/admin/events/:id' element={<EventDetail />} />
-            </Route>
-          </Routes>
-        </main>
-      </div>
+              {/* Camping Equipment Routes */}
+              <Route path="/camping-equipment" element={<CampingEquipment />} />
+              <Route path="/camping-equipment/:id" element={<CampingEquipmentDetail />} />
+
+              {/* Cart Routes */}
+              <Route path="/cart" element={<CartPage />} />
+              <Route path="/rental-checkout" element={<RentalCheckoutPage />} />
+
+              {/* User routes */}
+              <Route element={<ProtectedRoute />}>
+                <Route path='/dashboard' element={<UserDashboard />} />
+                <Route path='/update-profile' element={<UpdateProfile />} />
+                <Route path='/create-event' element={<CreateEvent />} />
+                <Route path='/my-events' element={<MyEvents />} />
+                <Route path='/events/:id/edit' element={<EditEvent />} />
+                <Route path="/events/:id/register" element={<EventRegistration />} />
+                <Route path="/payments/history" element={<UserPaymentHistory />} />
+                <Route path="/payments/:paymentId/edit" element={<EditPayment />} />
+              </Route>
+              
+              {/* Admin routes */}
+              <Route element={<ProtectedRoute adminOnly={true} />}>
+                <Route path='/admin-dashboard' element={<AdminDashboard />} />
+                <Route path='/admin/users' element={<AdminUsers />} />
+                <Route path='/admin/events' element={<AdminEvents />} />
+                <Route path='/admin/approvals' element={<AdminEvents />} />
+                <Route path='/admin/payment-approvals' element={<PaymentApproval />} />
+                <Route path='/admin/payments/:id' element={<PaymentDetails />} />
+                <Route path='/admin/profile' element={<AdminUpdateProfile />} />
+                <Route path='/admin/events/:id' element={<EventDetail />} />
+                <Route path="/admin/camping-equipment" element={<ManageCampingEquipment />} />
+              </Route>
+            </Routes>
+          </main>
+        </div>
+      </CartProvider>
     </AuthProvider>
   );
 };
