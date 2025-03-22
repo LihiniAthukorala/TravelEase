@@ -17,7 +17,8 @@ const Header = () => {
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
         >
-          <span className="text-white">Bloomz</span>
+          <span className="text-white">Online Tourism and Travel Management System
+          </span>
         </Link>
         
         <nav className="w-full md:w-auto">
