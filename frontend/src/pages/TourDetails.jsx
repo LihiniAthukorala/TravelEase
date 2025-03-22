@@ -9,7 +9,6 @@ import { useAuth } from '../context/AuthContext';
 const TourDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const navigate = useNavigate();
   const [tour, setTour] = useState(null);
   const [tours, setTours] = useState([]);
   const [loading, setLoading] = useState(true);
