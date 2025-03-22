@@ -1,88 +1,90 @@
-import React from "react";
-import {
-  BrowserRouter as Router,
-  Routes,
-  Route,
-  useLocation,
-} from "react-router-dom";
-import Users from "./pages/Users";
-import Products from "./pages/Products";
-import Carts from "./pages/Carts";
-import Rentals from "./pages/Rentals";
-import ProductPage from "./pages/ProductPage";
-import AddToCartPage from "./pages/AddToCartPage";
-import LoginPage from "./pages/LoginPage";
-import CartPage from "./pages/CartPage";
-import RentalPage from "./pages/RentalPage";
-import RentItemForm from "./pages/RentItemForm";
-import RentedItemsPage from "./pages/RentedItemsPage";
-import TravelPackages from "./pages/TravelPackages ";
-import PaymentPage from "./pages/paymentPage";
-import CreateTravelPackage from "./pages/CreateTravelPackage";
-import TravelPackageDetails from "./pages/TravelPackageDetails";
-import RegisterPage from "./pages/RegisterPage";
-import TravelPackageView from "./pages/TravelPackageView";
-import Navbar from "./components/Navbar";
-import ProfilePage from "./pages/ProfilePage";
-import AdminBookingPage from "./pages/AdminBookingPage";
-import BookingPage from "./pages/BookingPage";
-
-// This component will conditionally render the Navbar
-const AppContent = () => {
-  const location = useLocation();
-  const isLoginPage = location.pathname === "/";
-  const isRegisterPage = location.pathname === "/register";
-  const isUserPage = location.pathname === "/users";
-  const isCartsPage = location.pathname === "/carts";
-  const isRentalPage = location.pathname === "/rentals";
-  const isProductPage = location.pathname === "/products";
-  const isAdminBookingPage = location.pathname === "/adminbooking";
-
-  return (
-    <>
-      {/* Only render Navbar if not on login page */}
-      {!isLoginPage &&
-        !isCartsPage &&
-        !isRentalPage &&
-        !isProductPage &&
-        !isRegisterPage &&
-        !isAdminBookingPage &&
-        !isUserPage && <Navbar />}
-      <Routes>
-        <Route path="/users" element={<Users />} />
-        <Route path="/profile" element={<ProfilePage />} />
-        <Route path="/register" element={<RegisterPage />} />
-        <Route path="/products" element={<Products />} />
-        <Route path="/carts" element={<Carts />} />
-        <Route path="/rentals" element={<Rentals />} />
-        <Route path="/userproducts" element={<ProductPage />} />
-        <Route path="/addtocart" element={<AddToCartPage />} />
-        <Route path="/" element={<LoginPage />} />
-        <Route path="/usercart" element={<CartPage />} />
-        <Route path="/userrental" element={<RentalPage />} />
-        <Route path="/rentform" element={<RentItemForm />} />
-        <Route path="/rentcheckout" element={<RentedItemsPage />} />
-        <Route path="/travelPackages" element={<TravelPackages />} />
-        <Route path="/payment" element={<PaymentPage />} />
-        <Route path="/adminbooking" element={<AdminBookingPage />} />
-        <Route
-          path="/travelPackages/Create"
-          element={<CreateTravelPackage />}
-        />
-        <Route path="/travelPackages/:id" element={<TravelPackageDetails />} />
-        <Route path="/travelPackagesview/:id" element={<TravelPackageView />} />
-        <Route path="/bookings/:id" element={<BookingPage />} />
-      </Routes>
-    </>
-  );
-};
+import React from 'react';
+import { Routes, Route, useLocation } from 'react-router-dom';
+import Home from './components/Home';
+import Login from './User/Login';
+import Register from './User/Register';
+import UserDashboard from './User/UserDashboard';
+import AdminDashboard from './User/AdminDashboard';
+import AdminUsers from './User/AdminUsers';
+import ProtectedRoute from './components/ProtectedRoute';
+import { AuthProvider } from './context/AuthContext';
+import Header from './components/Header';
+import PaymentCart from './pages/payment/PaymentCart';
+import Feedback from './pages/feedback/feedback';
+import Managefeedback from './pages/feedback/managefeedback';
+import Feedbackview from './pages/feedback/feedbackview';
+import UpdateProfile from './User/UpdateProfile';
+import AdminUpdateProfile from './User/AdminUpdateProfile';
+import PendingApproval from './pages/payment/PendingApproval';
+import PaymentApproval from './pages/admin/PaymentApproval';
+import PaymentDetails from './pages/admin/PaymentDetails';
+import UserPaymentHistory from './pages/payment/UserPaymentHistory';
+import EditPayment from './pages/payment/EditPayment';
+// Import Event Components
+import CreateEvent from './Events/CreateEvent';
+import MyEvents from './Events/MyEvents';
+import AdminEvents from './Events/AdminEvents';
+import EventDetail from './Events/EventDetail';
+import BrowseEvents from './Events/BrowseEvents';
+import EventRegistration from './Events/EventRegistration';
+import UpdateFeedback from './pages/feedback/UpdateFeedback';
+import UserFeedbackView from './pages/feedback/UserFeedbackView';
+import EditEvent from './Events/EditEvent';
 
 const App = () => {
+  const location = useLocation();
+  const hideHeader = ['/admin-dashboard', '/admin/events', '/admin/users', '/admin/approvals'].includes(location.pathname);
+
   return (
-    <Router>
-      <AppContent />
-    </Router>
+    <AuthProvider>
+      <div className="min-h-screen flex flex-col">
+        {!hideHeader && <Header />}
+        <main className="flex-grow">
+          <Routes>
+            {/* Public routes */}
+            <Route path='/' element={<Home />} />
+            <Route path='/login' element={<Login />} />
+            <Route path='/register' element={<Register />} />
+            <Route path='/payment' element={<PaymentCart />} />
+            <Route path='/pending-approval' element={<PendingApproval />} />
+            <Route path='/events' element={<BrowseEvents />} />
+            <Route path='/events/:id' element={<EventDetail />} />
+            <Route path='/feedback' element={<Feedback />} />
+            <Route path='/managefeedback' element={<Managefeedback />} />
+            <Route path='/feedbackview' element={<Feedbackview />} />
+            <Route path='/update-feedback' element={<UpdateFeedback />} />
+            <Route path='/user-feedback' element={<UserFeedbackView />} />
+
+            {/* User routes */}
+            <Route element={<ProtectedRoute />}>
+              <Route path='/dashboard' element={<UserDashboard />} />
+              <Route path='/update-profile' element={<UpdateProfile />} />
+              <Route path='/create-event' element={<CreateEvent />} />
+              <Route path='/my-events' element={<MyEvents />} />
+              <Route path='/events/:id/edit' element={<EditEvent />} />
+              <Route path="/events/:id/register" element={<EventRegistration />} />
+              <Route path="/payments/history" element={<UserPaymentHistory />} />
+              <Route path="/payments/:paymentId/edit" element={<EditPayment />} />
+            </Route>
+            
+            {/* Admin routes */}
+            <Route element={<ProtectedRoute adminOnly={true} />}>
+              <Route path='/admin-dashboard' element={<AdminDashboard />} />
+              <Route path='/admin/users' element={<AdminUsers />} />
+              <Route path='/admin/events' element={<AdminEvents />} />
+              <Route path='/admin/approvals' element={<AdminEvents />} />
+              <Route path='/admin/payment-approvals' element={<PaymentApproval />} />
+              <Route path='/admin/payments/:id' element={<PaymentDetails />} />
+              <Route path='/admin/profile' element={<AdminUpdateProfile />} />
+              <Route path='/admin/events/:id' element={<EventDetail />} />
+            </Route>
+          </Routes>
+        </main>
+      </div>
+    </AuthProvider>
   );
 };
 
 export default App;
+
+
