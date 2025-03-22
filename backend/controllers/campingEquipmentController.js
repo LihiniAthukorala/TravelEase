@@ -2,6 +2,8 @@ import CampingEquipment from '../models/CampingEquipment.js';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
+import InventoryAuditLog from '../models/InventoryAuditLog.js';
+import mongoose from 'mongoose';
 
 // Get directory name (ES module version of __dirname)
 const __filename = fileURLToPath(import.meta.url);
@@ -53,6 +55,9 @@ export const getEquipment = async (req, res) => {
 
 // Create new equipment
 export const createEquipment = async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+  
   try {
     console.log('Creating equipment with body:', req.body);
     console.log('File received:', req.file);
@@ -96,17 +101,48 @@ export const createEquipment = async (req, res) => {
       quantity: Number(quantity),
       category,
       image: imagePath,
-      isAvailable: isAvailable === 'true' || isAvailable === true
+      isAvailable: isAvailable === 'true' || isAvailable === true,
+      status: 'available',
+      condition: req.body.condition || 'new',
+      serialNumber: req.body.serialNumber,
+      barcodeId: req.body.barcodeId,
+      location: req.body.location,
+      purchaseDate: req.body.purchaseDate,
+      purchasePrice: req.body.purchasePrice,
+      warrantyExpiryDate: req.body.warrantyExpiryDate,
+      notes: req.body.notes
     });
 
-    const savedEquipment = await equipment.save();
-    console.log('Equipment saved:', savedEquipment);
+    await equipment.save({ session });
+    
+    // Create audit log for new equipment
+    const auditLog = new InventoryAuditLog({
+      equipment: equipment._id,
+      actionType: 'create',
+      quantityBefore: 0,
+      quantityAfter: equipment.quantity,
+      statusBefore: null,
+      statusAfter: 'available',
+      reference: null,
+      reason: 'Initial inventory addition',
+      performedBy: req.user._id,
+      notes: 'New equipment created'
+    });
+    
+    await auditLog.save({ session });
+    
+    await session.commitTransaction();
+    session.endSession();
+    
+    console.log('Equipment saved:', equipment);
     
     res.status(201).json({
       success: true,
-      equipment: savedEquipment
+      equipment: equipment
     });
   } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
     console.error('Error creating equipment:', error);
     res.status(500).json({
       success: false,
@@ -118,6 +154,9 @@ export const createEquipment = async (req, res) => {
 
 // Update equipment
 export const updateEquipment = async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+  
   try {
     console.log('Updating equipment with ID:', req.params.id);
     console.log('Update data:', req.body);
@@ -132,6 +171,9 @@ export const updateEquipment = async (req, res) => {
       });
     }
 
+    const oldQuantity = equipment.quantity;
+    const oldStatus = equipment.status;
+
     const updateData = { ...req.body };
     
     // Handle image upload if a new file is provided
@@ -141,11 +183,44 @@ export const updateEquipment = async (req, res) => {
       console.log(`New image path: ${updateData.image}`);
     }
 
+    // Add new fields
+    if (req.body.status) equipment.status = req.body.status;
+    if (req.body.condition) equipment.condition = req.body.condition;
+    if (req.body.serialNumber !== undefined) equipment.serialNumber = req.body.serialNumber;
+    if (req.body.barcodeId !== undefined) equipment.barcodeId = req.body.barcodeId;
+    if (req.body.location !== undefined) equipment.location = req.body.location;
+    if (req.body.purchaseDate !== undefined) equipment.purchaseDate = req.body.purchaseDate;
+    if (req.body.purchasePrice !== undefined) equipment.purchasePrice = req.body.purchasePrice;
+    if (req.body.warrantyExpiryDate !== undefined) equipment.warrantyExpiryDate = req.body.warrantyExpiryDate;
+    if (req.body.notes !== undefined) equipment.notes = req.body.notes;
+    if (req.body.maintenanceFrequency !== undefined) equipment.maintenanceFrequency = req.body.maintenanceFrequency;
+
     equipment = await CampingEquipment.findByIdAndUpdate(req.params.id, updateData, {
       new: true,
       runValidators: true
     });
 
+    await equipment.save({ session });
+    
+    // Create audit log for the update
+    const auditLog = new InventoryAuditLog({
+      equipment: equipment._id,
+      actionType: 'update',
+      quantityBefore: oldQuantity,
+      quantityAfter: equipment.quantity,
+      statusBefore: oldStatus,
+      statusAfter: equipment.status,
+      reference: null,
+      reason: 'Equipment details updated',
+      performedBy: req.user._id,
+      notes: req.body.updateReason || 'General update'
+    });
+    
+    await auditLog.save({ session });
+    
+    await session.commitTransaction();
+    session.endSession();
+    
     console.log('Equipment updated:', equipment);
 
     res.status(200).json({
@@ -153,6 +228,8 @@ export const updateEquipment = async (req, res) => {
       equipment
     });
   } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
     console.error('Error updating equipment:', error);
     res.status(500).json({
       success: false,
@@ -164,6 +241,9 @@ export const updateEquipment = async (req, res) => {
 
 // Delete equipment
 export const deleteEquipment = async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+  
   try {
     const equipment = await CampingEquipment.findById(req.params.id);
     
@@ -173,6 +253,26 @@ export const deleteEquipment = async (req, res) => {
         message: 'Equipment not found'
       });
     }
+
+    const equipmentId = equipment._id;
+    const oldQuantity = equipment.quantity;
+    const oldStatus = equipment.status;
+
+    // Create audit log before deletion
+    const auditLog = new InventoryAuditLog({
+      equipment: equipmentId,
+      actionType: 'delete',
+      quantityBefore: oldQuantity,
+      quantityAfter: 0,
+      statusBefore: oldStatus,
+      statusAfter: 'retired',
+      reference: null,
+      reason: 'Equipment deleted from system',
+      performedBy: req.user._id,
+      notes: req.body.deletionReason || 'Equipment removed from inventory'
+    });
+    
+    await auditLog.save({ session });
 
     // Delete associated image file if it exists and is not the default
     if (equipment.image && !equipment.image.includes('default-equipment') && equipment.image.startsWith('/uploads')) {
@@ -185,11 +285,16 @@ export const deleteEquipment = async (req, res) => {
 
     await equipment.deleteOne();
 
+    await session.commitTransaction();
+    session.endSession();
+
     res.status(200).json({
       success: true,
       message: 'Equipment deleted successfully'
     });
   } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
     console.error('Error deleting equipment:', error);
     res.status(500).json({
       success: false,

@@ -35,6 +35,52 @@ const campingEquipmentSchema = new mongoose.Schema({
   createdAt: {
     type: Date,
     default: Date.now
+  },
+  status: {
+    type: String,
+    enum: ['available', 'in-use', 'damaged', 'maintenance', 'retired', 'lost'],
+    default: 'available'
+  },
+  condition: {
+    type: String,
+    enum: ['new', 'excellent', 'good', 'fair', 'poor'],
+    default: 'new'
+  },
+  lastMaintenance: {
+    type: Date
+  },
+  nextMaintenanceScheduled: {
+    type: Date
+  },
+  maintenanceFrequency: {
+    type: Number, // in days
+    default: 90
+  },
+  serialNumber: {
+    type: String,
+    sparse: true,
+    trim: true
+  },
+  barcodeId: {
+    type: String,
+    sparse: true,
+    trim: true
+  },
+  location: {
+    type: String,
+    trim: true
+  },
+  purchaseDate: {
+    type: Date
+  },
+  purchasePrice: {
+    type: Number
+  },
+  warrantyExpiryDate: {
+    type: Date
+  },
+  notes: {
+    type: String
   }
 });
 

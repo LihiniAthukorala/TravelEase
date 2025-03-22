@@ -242,43 +242,56 @@ export const approvePayment = async (req, res) => {
       });
     }
 
-    // Get associated event
-    const event = await Event.findById(payment.event).session(session);
-    if (!event) {
-      await session.abortTransaction();
-      session.endSession();
-      return res.status(404).json({
-        success: false,
-        message: 'Associated event not found'
-      });
-    }
+    // Handle different payment types
+    if (payment.type === 'event') {
+      // For event payments, check and update associated event
+      const event = await Event.findById(payment.event).session(session);
+      if (!event) {
+        await session.abortTransaction();
+        session.endSession();
+        return res.status(404).json({
+          success: false,
+          message: 'Associated event not found'
+        });
+      }
 
-    // Check if event is still at capacity
-    if (event.attendees.length >= event.capacity) {
-      await session.abortTransaction();
-      session.endSession();
-      return res.status(400).json({
-        success: false,
-        message: 'Event is now at full capacity'
-      });
+      // Check if event is still at capacity
+      if (event.attendees.length >= event.capacity) {
+        await session.abortTransaction();
+        session.endSession();
+        return res.status(400).json({
+          success: false,
+          message: 'Event is now at full capacity'
+        });
+      }
+
+      // Add user to event attendees
+      if (!event.attendees.includes(payment.user)) {
+        event.attendees.push(payment.user);
+        await event.save({ session });
+      }
+    } 
+    else if (payment.type === 'cart') {
+      // For cart payments, no event to check - just approve the payment
+      console.log('Processing cart payment approval');
+      // Any cart-specific logic here
+    }
+    else {
+      // For any other payment types
+      console.log('Processing general payment approval');
+      // Any other payment type specific logic here
     }
 
     // Update payment status
     payment.status = 'approved';
     await payment.save({ session });
 
-    // Add user to event attendees
-    if (!event.attendees.includes(payment.user)) {
-      event.attendees.push(payment.user);
-      await event.save({ session });
-    }
-
     await session.commitTransaction();
     session.endSession();
 
     res.status(200).json({
       success: true,
-      message: 'Payment approved and user registered for the event',
+      message: 'Payment approved successfully',
       payment: {
         id: payment._id,
         status: payment.status

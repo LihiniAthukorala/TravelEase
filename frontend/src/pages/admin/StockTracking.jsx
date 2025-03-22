@@ -1,0 +1,705 @@
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import { useSnackbar } from 'notistack';
+
+function StockTracking() {
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [admin, setAdmin] = useState(null);
+  const [stockAlerts, setStockAlerts] = useState([]);
+  const [suppliers, setSuppliers] = useState([]);
+  const [showSupplierModal, setShowSupplierModal] = useState(false);
+  const [showReorderModal, setShowReorderModal] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [reorderThreshold, setReorderThreshold] = useState(5);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+  const [autoReorderEnabled, setAutoReorderEnabled] = useState(false);
+  const [newSupplier, setNewSupplier] = useState({ name: '', email: '', phone: '', address: '' });
+  const navigate = useNavigate();
+  const { enqueueSnackbar } = useSnackbar();
+
+  useEffect(() => {
+    const fetchAdminData = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        
+        if (!token) {
+          navigate('/login');
+          return;
+        }
+        
+        const response = await axios.get('http://localhost:5001/api/auth/me', {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        
+        if (response.data.user.role !== 'admin') {
+          enqueueSnackbar('Access denied. Admin privileges required.', { variant: 'error' });
+          navigate('/dashboard');
+          return;
+        }
+        
+        setAdmin(response.data.user);
+        
+        // Fetch stock data after admin authentication
+        fetchStockData(token);
+      } catch (error) {
+        console.error('Error fetching admin data:', error);
+        enqueueSnackbar('Failed to load admin data. Please login again.', { variant: 'error' });
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        navigate('/login');
+      }
+    };
+    
+    fetchAdminData();
+  }, [navigate, enqueueSnackbar]);
+
+  const fetchStockData = async (token) => {
+    try {
+      // Fetch camping equipment data - this represents our stock items
+      const response = await axios.get('http://localhost:5001/api/camping-equipment', {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      
+      if (response.data.success) {
+        const equipmentData = response.data.equipment || [];
+        setProducts(equipmentData);
+        
+        // Generate stock alerts for items with low quantity
+        const alerts = equipmentData
+          .filter(item => item.quantity < reorderThreshold) // Items below threshold
+          .map(item => ({
+            id: item._id,
+            name: item.name,
+            quantity: item.quantity,
+            status: item.quantity === 0 ? 'Out of Stock' : 'Low Stock'
+          }));
+        
+        setStockAlerts(alerts);
+        
+        // Show notifications for low stock if enabled
+        if (notificationsEnabled && alerts.length > 0) {
+          showStockNotifications(alerts);
+        }
+        
+        // Check for auto-reordering if enabled
+        if (autoReorderEnabled) {
+          checkAndProcessAutoReorders(alerts);
+        }
+      } else {
+        enqueueSnackbar('Failed to load stock data', { variant: 'error' });
+      }
+    } catch (error) {
+      console.error('Error fetching stock data:', error);
+      enqueueSnackbar('Failed to load stock data', { variant: 'error' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch mock suppliers (in a real app, this would come from the backend)
+  const fetchSuppliers = async () => {
+    // This is a mock function - in real implementation, you would fetch from your backend
+    setSuppliers([
+      { id: 1, name: 'Outdoor Gear Ltd', email: 'orders@outdoorgear.com', phone: '+94 711234567', address: 'Colombo, Sri Lanka' },
+      { id: 2, name: 'Camping World', email: 'supply@campingworld.com', phone: '+94 772345678', address: 'Kandy, Sri Lanka' },
+      { id: 3, name: 'Adventure Supplies', email: 'info@adventuresupplies.com', phone: '+94 763456789', address: 'Galle, Sri Lanka' }
+    ]);
+  };
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      fetchSuppliers();
+    }
+  }, []);
+
+  // Show browser notifications for low stock
+  const showStockNotifications = (alerts) => {
+    // Check if browser notifications are supported and enabled
+    if ("Notification" in window) {
+      if (Notification.permission === "granted") {
+        alerts.forEach(alert => {
+          new Notification(`Stock Alert: ${alert.name}`, {
+            body: `${alert.status}: Only ${alert.quantity} units remaining`,
+            icon: '/logo.png'
+          });
+        });
+      } else if (Notification.permission !== "denied") {
+        Notification.requestPermission().then(permission => {
+          if (permission === "granted") {
+            showStockNotifications(alerts);
+          }
+        });
+      }
+    }
+    
+    // Also show in-app notifications
+    alerts.forEach(alert => {
+      enqueueSnackbar(`${alert.status}: ${alert.name} - ${alert.quantity} units remaining`, { 
+        variant: alert.quantity === 0 ? 'error' : 'warning',
+        autoHideDuration: 5000
+      });
+    });
+  };
+
+  // Enable browser notifications
+  const enableNotifications = () => {
+    if ("Notification" in window) {
+      Notification.requestPermission().then(permission => {
+        if (permission === "granted") {
+          setNotificationsEnabled(true);
+          enqueueSnackbar('Stock notifications enabled', { variant: 'success' });
+        } else {
+          enqueueSnackbar('Notification permission denied', { variant: 'error' });
+        }
+      });
+    } else {
+      enqueueSnackbar('Browser notifications not supported', { variant: 'error' });
+    }
+  };
+
+  // Process automatic reordering
+  const checkAndProcessAutoReorders = (alerts) => {
+    alerts.forEach(alert => {
+      // In a real application, you would check if this item is configured for auto-reorder
+      // and has a designated supplier
+      
+      if (alert.quantity === 0) {
+        // Auto reorder out-of-stock items
+        placeAutomaticOrder(alert.id, alert.name);
+      }
+    });
+  };
+
+  // Place an automatic order with a supplier
+  const placeAutomaticOrder = (productId, productName) => {
+    // This is a mock function - in real implementation, you would call your API
+    // to create an order with the supplier
+    
+    enqueueSnackbar(`Automatic reorder placed for ${productName}`, { 
+      variant: 'info',
+      autoHideDuration: 5000
+    });
+    
+    // In a real app, you would make an API call:
+    // axios.post('http://localhost:5001/api/supplier/order', {
+    //   productId,
+    //   supplierId: designatedSupplier,
+    //   quantity: reorderQuantity
+    // }, { headers: { Authorization: `Bearer ${token}` } })
+  };
+
+  // Handle showing the supplier modal for a product
+  const openSupplierModal = (product) => {
+    setSelectedProduct(product);
+    setShowSupplierModal(true);
+  };
+
+  // Handle showing the reorder configuration modal
+  const openReorderModal = (product) => {
+    setSelectedProduct(product);
+    setShowReorderModal(true);
+  };
+
+  // Handle saving a new supplier
+  const handleSaveSupplier = async () => {
+    // In a real application, you would save the supplier to your database
+    try {
+      // Mock API call
+      // const response = await axios.post('http://localhost:5001/api/suppliers', newSupplier);
+      
+      // Add to local state for demo purposes
+      setSuppliers([...suppliers, { ...newSupplier, id: Date.now() }]);
+      
+      enqueueSnackbar('Supplier added successfully', { variant: 'success' });
+      setNewSupplier({ name: '', email: '', phone: '', address: '' });
+    } catch (error) {
+      enqueueSnackbar('Failed to add supplier', { variant: 'error' });
+    }
+  };
+
+  // Handle saving reorder configuration
+  const saveReorderConfig = async (product) => {
+    // In a real application, you would save the reorder configuration to your database
+    try {
+      // Mock API call
+      // const response = await axios.post(`http://localhost:5001/api/products/${product._id}/reorder-config`, {
+      //   threshold: reorderThreshold,
+      //   autoReorder: autoReorderEnabled
+      // });
+      
+      enqueueSnackbar('Reorder configuration saved', { variant: 'success' });
+      setShowReorderModal(false);
+    } catch (error) {
+      enqueueSnackbar('Failed to save configuration', { variant: 'error' });
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    enqueueSnackbar('Logged out successfully', { variant: 'success' });
+    window.location.href = '/login';
+  };
+
+  const getImageUrl = (imagePath) => {
+    if (!imagePath) {
+      return '/images/default-equipment.jpg';
+    }
+    
+    if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+      return imagePath;
+    }
+    
+    if (imagePath.startsWith('/uploads')) {
+      return `http://localhost:5001${imagePath}`;
+    }
+    
+    return '/images/default-equipment.jpg';
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-blue-500 border-solid"></div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-100">
+      {/* Sidebar */}
+      <div className="fixed inset-y-0 left-0 w-64 bg-gray-900 text-white">
+        <div className="p-6">
+          <h2 className="text-2xl font-bold">Admin Panel</h2>
+          <p className="text-gray-400 text-sm">Online Tourism and Travel Management System</p>
+        </div>
+        <nav className="mt-5">
+          <Link to="/admin-dashboard" className="flex items-center px-6 py-3 text-gray-300 hover:bg-gray-800 hover:text-gray-100">
+            <span className="ml-3">Dashboard</span>
+          </Link>
+          <Link to="/admin/users" className="flex items-center px-6 py-3 text-gray-300 hover:bg-gray-800 hover:text-gray-100">
+            <span className="ml-3">Users</span>
+          </Link>
+          <Link to="/admin/events" className="flex items-center px-6 py-3 text-gray-300 hover:bg-gray-800 hover:text-gray-100">
+            <span className="ml-3">Events</span>
+          </Link>
+          <Link to="/admin/payment-approvals" className="flex items-center px-6 py-3 text-gray-300 hover:bg-gray-800 hover:text-gray-100">
+            <span className="ml-3">Payment Approvals</span>
+          </Link>
+          <Link to="/admin/stock-tracking" className="flex items-center px-6 py-3 bg-gray-800 text-gray-100">
+            <span className="ml-3">Stock Tracking</span>
+          </Link>
+          <Link to="/managefeedback" className="flex items-center px-6 py-3 text-gray-300 hover:bg-gray-800 hover:text-gray-100">
+            <span className="ml-3">Feedback Manage</span>
+          </Link>
+          <button 
+            onClick={handleLogout} 
+            className="flex items-center px-6 py-3 text-gray-300 hover:bg-gray-800 hover:text-gray-100 w-full text-left"
+          >
+            <span className="ml-3">Logout</span>
+          </button>
+        </nav>
+      </div>
+
+      {/* Main Content */}
+      <div className="ml-64 p-8">
+        {/* Header */}
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-3xl font-bold">Real-Time Stock Tracking</h1>
+          <div className="flex items-center space-x-4">
+            {admin && (
+              <>
+                <span className="text-gray-600">Welcome, {admin.username}</span>
+                <div className="h-10 w-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold">
+                  {admin.username.charAt(0).toUpperCase()}
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Notification and Auto-Reorder Controls */}
+        <div className="bg-white rounded-lg shadow overflow-hidden mb-8">
+          <div className="px-6 py-5 border-b border-gray-200">
+            <h3 className="text-lg font-medium">Stock Management Controls</h3>
+          </div>
+          <div className="p-6 flex flex-wrap gap-4">
+            <div>
+              <button 
+                onClick={enableNotifications}
+                className={`px-4 py-2 rounded-lg ${notificationsEnabled ? 'bg-green-100 text-green-800 border border-green-200' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
+                disabled={notificationsEnabled}
+              >
+                {notificationsEnabled ? '✓ Notifications Enabled' : 'Enable Stock Notifications'}
+              </button>
+            </div>
+            <div>
+              <button 
+                onClick={() => setAutoReorderEnabled(!autoReorderEnabled)}
+                className={`px-4 py-2 rounded-lg ${autoReorderEnabled ? 'bg-green-100 text-green-800 border border-green-200' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
+              >
+                {autoReorderEnabled ? '✓ Auto-Reorder Enabled' : 'Enable Auto-Reorder'}
+              </button>
+            </div>
+            <div>
+              <button
+                onClick={() => setShowSupplierModal(true)}
+                className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700"
+              >
+                Manage Suppliers
+              </button>
+            </div>
+            <div className="flex items-center ml-auto">
+              <label htmlFor="threshold" className="mr-2 text-gray-700">Reorder Threshold:</label>
+              <input 
+                id="threshold"
+                type="number" 
+                min="1" 
+                max="100" 
+                value={reorderThreshold} 
+                onChange={(e) => setReorderThreshold(parseInt(e.target.value))}
+                className="w-16 px-2 py-1 border border-gray-300 rounded"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Stock Alerts */}
+        <div className="bg-white rounded-lg shadow overflow-hidden mb-8">
+          <div className="px-6 py-5 border-b border-gray-200">
+            <h3 className="text-lg font-medium text-red-600">Stock Alerts</h3>
+          </div>
+          <div className="p-6">
+            {stockAlerts.length === 0 ? (
+              <div className="text-center py-4 text-gray-500">No stock alerts. Inventory levels are good.</div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {stockAlerts.map(alert => (
+                  <div 
+                    key={alert.id} 
+                    className={`border rounded-lg p-4 ${
+                      alert.status === 'Out of Stock' ? 'border-red-500 bg-red-50' : 'border-yellow-500 bg-yellow-50'
+                    }`}
+                  >
+                    <div className="font-semibold">{alert.name}</div>
+                    <div className="flex justify-between items-center mt-2">
+                      <span className={`text-sm ${alert.status === 'Out of Stock' ? 'text-red-600' : 'text-yellow-600'}`}>
+                        {alert.status}
+                      </span>
+                      <span className="font-bold">{alert.quantity} units</span>
+                    </div>
+                    <div className="mt-3 pt-2 border-t border-gray-200 flex justify-end space-x-2">
+                      <button
+                        onClick={() => openReorderModal(products.find(p => p._id === alert.id))}
+                        className="text-xs px-2 py-1 bg-blue-100 text-blue-600 rounded hover:bg-blue-200"
+                      >
+                        Set Reorder
+                      </button>
+                      <button
+                        onClick={() => openSupplierModal(products.find(p => p._id === alert.id))}
+                        className="text-xs px-2 py-1 bg-green-100 text-green-600 rounded hover:bg-green-200"
+                      >
+                        Order Now
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Current Stock Levels */}
+        <div className="bg-white rounded-lg shadow overflow-hidden">
+          <div className="px-6 py-5 border-b border-gray-200 flex justify-between items-center">
+            <h3 className="text-lg font-medium">Current Stock Inventory</h3>
+            <Link to="/admin/camping-equipment" className="text-blue-500 hover:text-blue-700">
+              Manage Equipment
+            </Link>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {products.map((product) => (
+                  <tr key={product._id}>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <div className="flex-shrink-0 h-10 w-10">
+                          <img 
+                            className="h-10 w-10 rounded-sm object-cover" 
+                            src={getImageUrl(product.image)}
+                            alt={product.name}
+                            onError={(e) => e.target.src = '/images/default-equipment.jpg'} 
+                          />
+                        </div>
+                        <div className="ml-4">
+                          <div className="text-sm font-medium text-gray-900">{product.name}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">{product.category}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">LKR {product.price.toFixed(2)}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">{product.quantity}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                        product.quantity === 0 
+                          ? 'bg-red-100 text-red-800' 
+                          : product.quantity < reorderThreshold
+                            ? 'bg-yellow-100 text-yellow-800'
+                            : 'bg-green-100 text-green-800'
+                      }`}>
+                        {product.quantity === 0 
+                          ? 'Out of Stock' 
+                          : product.quantity < reorderThreshold 
+                            ? 'Low Stock' 
+                            : 'In Stock'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <button
+                        onClick={() => openReorderModal(product)}
+                        className="mr-2 text-blue-600 hover:text-blue-800"
+                      >
+                        Set Reorder
+                      </button>
+                      <button
+                        onClick={() => openSupplierModal(product)}
+                        className="text-green-600 hover:text-green-800"
+                      >
+                        Order
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      {/* Supplier Management Modal */}
+      {showSupplierModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl">
+            <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+              <h3 className="text-lg font-medium">
+                {selectedProduct ? `Order ${selectedProduct.name}` : 'Manage Suppliers'}
+              </h3>
+              <button onClick={() => setShowSupplierModal(false)} className="text-gray-400 hover:text-gray-500">
+                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="p-6">
+              {selectedProduct ? (
+                <div>
+                  <h4 className="font-medium mb-4">Select a supplier to place an order</h4>
+                  <div className="space-y-4 max-h-80 overflow-y-auto">
+                    {suppliers.map(supplier => (
+                      <div key={supplier.id} className="border rounded-lg p-4 hover:bg-gray-50 cursor-pointer">
+                        <div className="font-medium">{supplier.name}</div>
+                        <div className="text-sm text-gray-500">{supplier.email}</div>
+                        <div className="text-sm text-gray-500">{supplier.phone}</div>
+                        <div className="mt-2 flex justify-end">
+                          <button 
+                            onClick={() => {
+                              enqueueSnackbar(`Order placed with ${supplier.name}`, { variant: 'success' });
+                              setShowSupplierModal(false);
+                            }}
+                            className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700"
+                          >
+                            Place Order
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <h4 className="font-medium mb-4">Add New Supplier</h4>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">Supplier Name</label>
+                      <input 
+                        type="text"
+                        value={newSupplier.name}
+                        onChange={(e) => setNewSupplier({...newSupplier, name: e.target.value})}
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">Email</label>
+                      <input 
+                        type="email"
+                        value={newSupplier.email}
+                        onChange={(e) => setNewSupplier({...newSupplier, email: e.target.value})}
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">Phone</label>
+                      <input 
+                        type="text"
+                        value={newSupplier.phone}
+                        onChange={(e) => setNewSupplier({...newSupplier, phone: e.target.value})}
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">Address</label>
+                      <textarea 
+                        value={newSupplier.address}
+                        onChange={(e) => setNewSupplier({...newSupplier, address: e.target.value})}
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        rows="2"
+                      />
+                    </div>
+                    <div className="flex justify-end">
+                      <button 
+                        onClick={handleSaveSupplier}
+                        className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                      >
+                        Add Supplier
+                      </button>
+                    </div>
+                  </div>
+
+                  <h4 className="font-medium mt-8 mb-4">Existing Suppliers</h4>
+                  <div className="space-y-4 max-h-60 overflow-y-auto">
+                    {suppliers.map(supplier => (
+                      <div key={supplier.id} className="border rounded-lg p-4">
+                        <div className="font-medium">{supplier.name}</div>
+                        <div className="text-sm text-gray-500">{supplier.email}</div>
+                        <div className="text-sm text-gray-500">{supplier.phone}</div>
+                        <div className="text-sm text-gray-500">{supplier.address}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+            <div className="px-6 py-4 border-t border-gray-200 flex justify-end">
+              <button 
+                onClick={() => setShowSupplierModal(false)}
+                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reorder Configuration Modal */}
+      {showReorderModal && selectedProduct && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
+            <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+              <h3 className="text-lg font-medium">Auto-Reorder Configuration</h3>
+              <button onClick={() => setShowReorderModal(false)} className="text-gray-400 hover:text-gray-500">
+                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="p-6">
+              <div className="mb-4">
+                <h4 className="font-medium mb-2">Product: {selectedProduct.name}</h4>
+                <p className="text-sm text-gray-500">Current quantity: {selectedProduct.quantity} units</p>
+              </div>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Reorder Threshold</label>
+                  <p className="text-xs text-gray-500 mb-1">Order will be placed automatically when stock falls below this level</p>
+                  <input 
+                    type="number" 
+                    min="1" 
+                    value={reorderThreshold}
+                    onChange={(e) => setReorderThreshold(parseInt(e.target.value))} 
+                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+                
+                <div>
+                  <label className="flex items-center">
+                    <input 
+                      type="checkbox" 
+                      checked={autoReorderEnabled}
+                      onChange={(e) => setAutoReorderEnabled(e.target.checked)}
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    />
+                    <span className="ml-2 text-sm text-gray-700">Enable automatic reordering</span>
+                  </label>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Preferred Supplier</label>
+                  <select 
+                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="">Select a supplier</option>
+                    {suppliers.map(supplier => (
+                      <option key={supplier.id} value={supplier.id}>{supplier.name}</option>
+                    ))}
+                  </select>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Reorder Quantity</label>
+                  <input 
+                    type="number" 
+                    min="1"
+                    defaultValue="10"
+                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="px-6 py-4 border-t border-gray-200 flex justify-end space-x-2">
+              <button 
+                onClick={() => setShowReorderModal(false)}
+                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={() => saveReorderConfig(selectedProduct)}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              >
+                Save Configuration
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default StockTracking;
