@@ -32,6 +32,11 @@ import UserFeedbackView from './pages/feedback/UserFeedbackView';
 import EditEvent from './Events/EditEvent';
 import ManageTour from './pages/admin/ManageTour';
 import CreateTour from './pages/admin/CreateTour';
+
+import AdminOrders from './pages/admin/AdminOrders'; // Add this import
+import StockTracking from './pages/admin/StockTracking'; // Add this import
+import InventoryReports from './pages/admin/InventoryReports'; // Add this import
+
 // Import new components
 import CampingEquipment from './pages/CampingEquipment';
 import CampingEquipmentDetail from './pages/CampingEquipmentDetail';
@@ -106,8 +111,20 @@ const App = () => {
                 <Route path='/admin/profile' element={<AdminUpdateProfile />} />
                 <Route path='/admin/events/:id' element={<EventDetail />} />
                 <Route path="/admin/camping-equipment" element={<ManageCampingEquipment />} />
+                <Route path="/admin/orders" element={<AdminOrders />} /> {/* Add this route for orders */}
+                <Route path="/admin/stock-tracking" element={<StockTracking />} /> {/* Add this route */}
+              
+
                 <Route path='/admin/edit-tour/:id' element={<EditTour />} />
                 <Route path='/admin/all-bookings' element={<AllBookings />} />
+                <Route 
+                  path="/admin/inventory-reports" 
+                  element={
+                    <ProtectedRoute adminOnly={true}>
+                      <InventoryReports />
+                    </ProtectedRoute>
+                  } 
+                />
               </Route>
             </Routes>
           </main>
