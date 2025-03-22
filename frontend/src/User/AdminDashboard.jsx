@@ -7,7 +7,7 @@ const AdminDashboard = () => {
   const [admin, setAdmin] = useState(null);
   const [stats, setStats] = useState({
     totalUsers: 0,
-    totalTours: 0, // Changed from totalEvents
+    totalEvents: 0,
     pendingApprovals: 0
   });
   const [loading, setLoading] = useState(true);
@@ -40,9 +40,9 @@ const AdminDashboard = () => {
         
         setAdmin(response.data.user);
         
-        // Fetch users and tours after admin authentication
+        // Fetch users and events after admin authentication
         await fetchUsers(token);
-        await fetchTours(token); // Changed from fetchEvents
+        await fetchEvents(token);
         await fetchPendingPayments(token);
       } catch (error) {
         console.error('Error fetching admin data:', error);
@@ -83,9 +83,9 @@ const AdminDashboard = () => {
     }
   };
   
-  const fetchTours = async (token) => { // Changed from fetchEvents
+  const fetchEvents = async (token) => {
     try {
-      const response = await axios.get('http://localhost:5001/api/events', { // API endpoint may need to be updated in backend
+      const response = await axios.get('http://localhost:5001/api/events', {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -94,12 +94,12 @@ const AdminDashboard = () => {
       if (response.data.success) {
         setStats(prevStats => ({
           ...prevStats,
-          totalTours: response.data.events.length || 0 // Changed from totalEvents
+          totalEvents: response.data.events.length || 0
         }));
       }
     } catch (error) {
-      console.error('Error fetching tours:', error); // Changed from events
-      // Keep default value for totalTours
+      console.error('Error fetching events:', error);
+      // Keep default value for totalEvents
     }
   };
 
@@ -144,7 +144,7 @@ const AdminDashboard = () => {
       <div className="fixed inset-y-0 left-0 w-64 bg-gray-900 text-white">
         <div className="p-6">
           <h2 className="text-2xl font-bold">Admin Panel</h2>
-          <p className="text-gray-400 text-sm">Online Tourism and Travel Management System</p>
+          <p className="text-gray-400 text-sm">Event Management System</p>
         </div>
         <nav className="mt-5">
           <Link to="/admin-dashboard" className="flex items-center px-6 py-3 bg-gray-800 text-gray-100">
@@ -153,8 +153,8 @@ const AdminDashboard = () => {
           <Link to="/admin/users" className="flex items-center px-6 py-3 text-gray-300 hover:bg-gray-800 hover:text-gray-100">
             <span className="ml-3">Users</span>
           </Link>
-          <Link to="/admin/tours" className="flex items-center px-6 py-3 text-gray-300 hover:bg-gray-800 hover:text-gray-100">
-            <span className="ml-3">Tours</span>
+          <Link to="/admin/events" className="flex items-center px-6 py-3 text-gray-300 hover:bg-gray-800 hover:text-gray-100">
+            <span className="ml-3">Events</span>
           </Link>
           <Link to="/admin/payment-approvals" className="flex items-center px-6 py-3 text-gray-300 hover:bg-gray-800 hover:text-gray-100">
             <span className="ml-3">Payment Approvals</span>
@@ -198,10 +198,10 @@ const AdminDashboard = () => {
             </div>
           </div>
           <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-gray-500 text-sm font-medium">Total Tours</h3>
-            <p className="text-3xl font-bold">{stats.totalTours}</p>
+            <h3 className="text-gray-500 text-sm font-medium">Total Events</h3>
+            <p className="text-3xl font-bold">{stats.totalEvents}</p>
             <div className="mt-2">
-              <Link to="/admin/tours" className="text-blue-500 text-sm">View all tours →</Link>
+              <Link to="/admin/events" className="text-blue-500 text-sm">View all events →</Link>
             </div>
           </div>
           <div className="bg-white rounded-lg shadow p-6">
@@ -262,9 +262,9 @@ const AdminDashboard = () => {
           </div>
           <div className="p-6">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <Link to="/create-tour" className="bg-gray-100 p-4 rounded-lg hover:bg-gray-200 text-center">
+              <Link to="/create-event" className="bg-gray-100 p-4 rounded-lg hover:bg-gray-200 text-center">
                 <div className="text-lg mb-1">+</div>
-                <div className="text-sm">Create Tour</div>
+                <div className="text-sm">Create Event</div>
               </Link>
               <Link to="/admin/users" className="bg-gray-100 p-4 rounded-lg hover:bg-gray-200 text-center">
                 <div className="text-lg mb-1">👥</div>
