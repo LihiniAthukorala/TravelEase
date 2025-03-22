@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useSnackbar } from 'notistack';
 import { Link } from 'react-router-dom';
@@ -8,7 +9,9 @@ import { useAuth } from '../context/AuthContext';
 const TourDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const navigate = useNavigate();
   const [tour, setTour] = useState(null);
+  const [tours, setTours] = useState([]);
   const [loading, setLoading] = useState(true);
   const [userBookings, setUserBookings] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -16,6 +19,26 @@ const TourDetails = () => {
   const { enqueueSnackbar } = useSnackbar();
 
   useEffect(() => {
+    // If we don't have an ID, fetch all tours instead
+    if (!id) {
+      const fetchAllTours = async () => {
+        try {
+          const response = await axios.get('http://localhost:5001/api/tours');
+          setTours(response.data || []);
+          setLoading(false);
+        } catch (error) {
+          console.error('Error fetching tours:', error);
+          enqueueSnackbar('Failed to load tours', { variant: 'error' });
+          setTours([]);
+          setLoading(false);
+        }
+      };
+      
+      fetchAllTours();
+      return;
+    }
+
+    // If we have an ID, fetch the specific tour details
     const fetchTourAndBookings = async () => {
       if (!id) {
         enqueueSnackbar('Invalid tour ID', { variant: 'error' });
@@ -47,6 +70,7 @@ const TourDetails = () => {
       } catch (error) {
         console.error('Error:', error);
         enqueueSnackbar('Error fetching tour details', { variant: 'error' });
+        navigate('/tours'); // Redirect to all tours page on error
         setLoading(false);
         navigate('/tours');
       }
@@ -56,11 +80,17 @@ const TourDetails = () => {
   }, [id, isAuthenticated, navigate, enqueueSnackbar]);
 
   // Filter tours based on search term
-  const filteredTours = tour ? [tour].filter(tour =>
-    tour.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    tour.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    tour.description.toLowerCase().includes(searchTerm.toLowerCase())
-  ) : [];
+  const filteredTours = id && tour 
+    ? [tour].filter(tour => 
+        tour.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        tour.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        tour.description.toLowerCase().includes(searchTerm.toLowerCase())
+      ) 
+    : tours.filter(tour => 
+        tour.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        tour.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (tour.description && tour.description.toLowerCase().includes(searchTerm.toLowerCase()))
+      );
 
   if (loading) {
     return (
@@ -70,11 +100,22 @@ const TourDetails = () => {
     );
   }
 
+  // Get image URL with proper fallback
+  const getImageUrl = (imagePath) => {
+    if (!imagePath) return 'https://via.placeholder.com/400x300';
+    
+    if (imagePath.startsWith('http')) return imagePath;
+    
+    return `http://localhost:5001/${imagePath}`;
+  };
+
   return (
     <div className="min-h-screen bg-gray-100 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
         <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">Tour Plans</h1>
+          <h1 className="text-4xl font-bold text-gray-900 mb-4">
+            {id ? 'Tour Details' : 'All Tours'}
+          </h1>
           <p className="text-lg text-gray-600">Discover amazing travel experiences</p>
         </div>
 
@@ -86,7 +127,7 @@ const TourDetails = () => {
               placeholder="Search tours by name, location, or description..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full px-4 py-3 rounded-lg shadow-sm border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+              className="w-full px-4 py-3 rounded-lg shadow-sm border border-gray-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
             />
             <div className="absolute right-3 top-3 text-gray-400">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -105,9 +146,13 @@ const TourDetails = () => {
               >
                 <div className="relative h-48">
                   <img
-                    src={tour.image || 'https://via.placeholder.com/400x300'}
+                    src={getImageUrl(tour.image)}
                     alt={tour.name}
                     className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.src = 'https://via.placeholder.com/400x300?text=No+Image';
+                    }}
                   />
                   <div className="absolute top-0 right-0 p-2 bg-blue-600 text-white rounded-bl-lg">
                     ${tour.price}
@@ -129,23 +174,32 @@ const TourDetails = () => {
                     </div>
                   </div>
 
-                  <Link
-                    to={isAuthenticated ? '/payment' : '/login'}
-                    state={{ 
-                      tourData: tour,
-                      type: 'tour',
-                      amount: tour.price,
-                      purchaseDetails: {
-                        name: tour.name,
-                        duration: tour.duration,
-                        location: tour.location,
-                        date: tour.date
-                      }
-                    }}
-                    className="block w-full text-center px-4 py-2 border border-transparent rounded-md text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 transition duration-150 ease-in-out"
-                  >
-                    {isAuthenticated ? 'Book Now' : 'Login to Book'}
-                  </Link>
+                  {id ? (
+                    <Link
+                      to={isAuthenticated ? '/payment' : '/login'}
+                      state={{ 
+                        tourData: tour,
+                        type: 'tour',
+                        amount: tour.price,
+                        purchaseDetails: {
+                          name: tour.name,
+                          duration: tour.duration,
+                          location: tour.location,
+                          date: tour.date
+                        }
+                      }}
+                      className="block w-full text-center px-4 py-2 border border-transparent rounded-md text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 transition duration-150 ease-in-out"
+                    >
+                      {isAuthenticated ? 'Book Now' : 'Login to Book'}
+                    </Link>
+                  ) : (
+                    <Link
+                      to={`/tours/${tour._id}`}
+                      className="block w-full text-center px-4 py-2 border border-transparent rounded-md text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 transition duration-150 ease-in-out"
+                    >
+                      View Details
+                    </Link>
+                  )}
                 </div>
               </div>
             ))
