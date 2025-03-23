@@ -130,6 +130,14 @@ export const getCartByUser = async (req, res) => {
   try {
     const { userId } = req.params;
 
+    // Check if req.user exists and has _id property
+    if (!req.user || !req.user._id) {
+      return res.status(401).json({
+        success: false,
+        message: 'Authentication error: User not properly identified'
+      });
+    }
+
     // Check if the requesting user matches the user ID
     if (req.user._id.toString() !== userId) {
       return res.status(403).json({
@@ -151,24 +159,43 @@ export const getCartByUser = async (req, res) => {
       });
     }
 
-    // Format cart items for response
-    const cartItems = cart.items.map(item => ({
-      _id: item._id,
-      equipmentId: item.equipment._id,
-      name: item.equipment.name,
-      price: item.price,
-      quantity: item.quantity,
-      image: item.equipment.image,
-      category: item.equipment.category,
-      isRental: item.isRental,
-      startDate: item.startDate,
-      endDate: item.endDate
-    }));
+    // Format cart items for response with null checks
+    const cartItems = cart.items.map(item => {
+      // Check if equipment exists before accessing its properties
+      if (!item.equipment) {
+        console.warn(`Cart item ${item._id} has missing equipment reference`);
+        return {
+          _id: item._id,
+          equipmentId: null,
+          name: 'Missing Item Reference',
+          price: item.price || 0,
+          quantity: item.quantity || 1,
+          image: null,
+          category: 'Unknown',
+          isRental: item.isRental || false,
+          startDate: item.startDate,
+          endDate: item.endDate
+        };
+      }
+
+      return {
+        _id: item._id,
+        equipmentId: item.equipment._id,
+        name: item.equipment.name,
+        price: item.price,
+        quantity: item.quantity,
+        image: item.equipment.image,
+        category: item.equipment.category,
+        isRental: item.isRental,
+        startDate: item.startDate,
+        endDate: item.endDate
+      };
+    });
 
     res.status(200).json({
       success: true,
       cartItems,
-      totalPrice: cart.totalPrice
+      totalPrice: cart.totalPrice || 0
     });
   } catch (error) {
     console.error('Error fetching cart:', error);
