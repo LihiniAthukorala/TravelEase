@@ -5,7 +5,8 @@ import {
   getInventoryStats,
   getTrendingProducts,
   getSeasonalPatterns,
-  getInventoryValueHistory
+  getInventoryValueHistory,
+  createOrUpdateReorderConfig
 } from '../controllers/inventoryController.js';
 import { protect } from '../middleware/authMiddleware.js';
 
@@ -31,5 +32,8 @@ router.get('/seasonal', getSeasonalPatterns);
 
 // Get inventory value history
 router.get('/value-history', getInventoryValueHistory);
+
+// Add this route for reorder configuration
+router.post('/reorder-config', createOrUpdateReorderConfig);
 
 export default router;

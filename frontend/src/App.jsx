@@ -61,6 +61,8 @@ import BookingDetails from './pages/admin/BookingDetails';
 import UserBookings from './pages/user/UserBookings';
 import UserOrders from './pages/user/UserOrders';
 
+import ManageSuppliers from './pages/admin/ManageSuppliers';
+
 const App = () => {
   const location = useLocation();
   const hideHeader = ['/admin-dashboard', '/admin/events', '/admin/users', '/admin/approvals'].includes(location.pathname);
@@ -132,19 +134,16 @@ const App = () => {
                 <Route path="/admin/camping-equipment" element={<ManageCampingEquipment />} />
                 <Route path="/admin/orders" element={<AdminOrders />} /> {/* Add this route for orders */}
                 <Route path="/admin/stock-tracking" element={<StockTracking />} /> {/* Add this route */}
-              
-
                 <Route path='/admin/edit-tour/:id' element={<EditTour />} />
                 <Route path='/admin/all-bookings' element={<AllBookings />} />
-                <Route 
-                  path="/admin/inventory-reports" 
-                  element={
-                    <ProtectedRoute adminOnly={true}>
-                      <InventoryReports />
-                    </ProtectedRoute>
-                  } 
-                />
+                <Route path='/admin/manage-suppliers' element={<ManageSuppliers />} />
+                <Route path="/admin/inventory-reports" element={<InventoryReports />} /> {/* Add this route */}
+
+                
+               
               </Route>
+               
+              
             </Routes>
           </main>
         </div>

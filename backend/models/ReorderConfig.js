@@ -4,7 +4,8 @@ const reorderConfigSchema = new mongoose.Schema({
   equipment: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'CampingEquipment',
-    required: true
+    required: true,
+    unique: true
   },
   threshold: {
     type: Number,
@@ -12,30 +13,29 @@ const reorderConfigSchema = new mongoose.Schema({
     default: 5,
     min: 1
   },
-  preferredSupplier: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Supplier',
-    required: false
-  },
   reorderQuantity: {
     type: Number,
     required: true,
     default: 10,
     min: 1
   },
-  autoReorderEnabled: {
+  autoReorder: {
     type: Boolean,
     default: false
+  },
+  preferredSupplier: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Supplier'
   },
   lastUpdated: {
     type: Date,
     default: Date.now
   },
-  updatedBy: {
+  createdBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
   }
-});
+}, { timestamps: true });
 
 const ReorderConfig = mongoose.model('ReorderConfig', reorderConfigSchema);
 

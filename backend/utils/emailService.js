@@ -9,8 +9,8 @@ const transporter = nodemailer.createTransport({
   port: process.env.SMTP_PORT || 587,
   secure: process.env.SMTP_SECURE === 'true', // true for 465, false for other ports
   auth: {
-    user: process.env.SMTP_USER || 'your-email@gmail.com', // email address
-    pass: process.env.SMTP_PASS || 'your-password', // email password or app-specific password
+    user: process.env.SMTP_USER || 'abc@gmail.com', // email address
+    pass: process.env.SMTP_PASS || 'vv', // email password or app-specific password
   },
 });
 
@@ -123,8 +123,85 @@ export const sendOrderConfirmationEmail = async (to, order) => {
   return sendEmail(to, subject, text);
 };
 
+/**
+ * Send a low stock alert email to a supplier
+ * @param {string} to - Supplier's email address
+ * @param {string} supplierName - Name of the supplier
+ * @param {Array} items - List of low stock items
+ */
+export const sendLowStockAlertEmail = async (to, supplierName, items) => {
+  const subject = `Low Stock Alert - Reorder Request`;
+  
+  // Create text version of the email
+  let itemsList = '';
+  items.forEach(item => {
+    itemsList += `- ${item.name}: ${item.quantity} units remaining (Reorder Quantity: ${item.reorderQuantity})\n`;
+  });
+  
+  const text = `
+    Dear ${supplierName},
+
+    We are running low on the following items that you supply to us:
+
+    ${itemsList}
+
+    Please contact us to arrange a restock order as soon as possible.
+    
+    Regards,
+    The Tourism & Travel Management System Team
+  `;
+  
+  // Create HTML version of the email
+  let itemsHtml = '';
+  items.forEach(item => {
+    const statusColor = item.quantity === 0 ? '#dc2626' : '#f59e0b';
+    itemsHtml += `
+      <tr>
+        <td style="padding: 8px; border-bottom: 1px solid #eee;">${item.name}</td>
+        <td style="padding: 8px; border-bottom: 1px solid #eee; color: ${statusColor}; font-weight: bold;">${item.quantity} units</td>
+        <td style="padding: 8px; border-bottom: 1px solid #eee;">${item.reorderQuantity}</td>
+      </tr>
+    `;
+  });
+  
+  const html = `
+    <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: 0 auto;">
+      <h2 style="color: #3b82f6; border-bottom: 1px solid #eee; padding-bottom: 10px;">
+        Low Stock Alert - Reorder Request
+      </h2>
+      
+      <p style="margin-top: 20px;">Dear ${supplierName},</p>
+      
+      <p>We are running low on the following items that you supply to us:</p>
+      
+      <table style="width: 100%; border-collapse: collapse; margin: 15px 0;">
+        <thead>
+          <tr style="background-color: #f3f4f6;">
+            <th style="padding: 8px; text-align: left;">Item</th>
+            <th style="padding: 8px; text-align: left;">Current Stock</th>
+            <th style="padding: 8px; text-align: left;">Suggested Order</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${itemsHtml}
+        </tbody>
+      </table>
+      
+      <p>Please contact us to arrange a restock order as soon as possible.</p>
+      
+      <p style="margin-top: 20px;">Regards,<br>The Tourism & Travel Management System Team</p>
+      
+      <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+      <p style="color: #6b7280; font-size: 12px;">This is an automated message from the Tourism & Travel Management System.</p>
+    </div>
+  `;
+  
+  return sendEmail(to, subject, text, html);
+};
+
 export default {
   sendEmail,
   sendStockAlertEmail,
-  sendOrderConfirmationEmail
+  sendOrderConfirmationEmail,
+  sendLowStockAlertEmail
 };

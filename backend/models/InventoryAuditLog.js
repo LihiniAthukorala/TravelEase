@@ -8,7 +8,7 @@ const inventoryAuditLogSchema = new mongoose.Schema({
   },
   actionType: {
     type: String,
-    enum: ['create', 'update', 'delete', 'stock-in', 'stock-out', 'adjust', 'maintenance', 'damage'],
+    enum: ['stock-in', 'stock-out', 'update', 'maintenance', 'transfer'],
     required: true
   },
   quantityBefore: {
@@ -19,30 +19,35 @@ const inventoryAuditLogSchema = new mongoose.Schema({
     type: Number,
     required: true
   },
-  statusBefore: String,
-  statusAfter: String,
+  statusBefore: {
+    type: String
+  },
+  statusAfter: {
+    type: String
+  },
   reference: {
-    type: String, // Can be order ID, maintenance ID, etc.
-    required: false
+    type: String,
+    trim: true
   },
   reason: {
     type: String,
-    required: true
+    required: true,
+    trim: true
   },
   performedBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: true
   },
-  notes: String,
+  notes: {
+    type: String,
+    trim: true
+  },
   timestamp: {
     type: Date,
     default: Date.now
   }
-});
-
-// Index for faster lookups by equipment ID and timestamp
-inventoryAuditLogSchema.index({ equipment: 1, timestamp: -1 });
+}, { timestamps: true });
 
 const InventoryAuditLog = mongoose.model('InventoryAuditLog', inventoryAuditLogSchema);
 

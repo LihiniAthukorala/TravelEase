@@ -1,4 +1,7 @@
+import { sendLowStockAlertEmail } from '../utils/emailService.js';
 import Supplier from '../models/Supplier.js';
+import CampingEquipment from '../models/CampingEquipment.js';
+import ReorderConfig from '../models/ReorderConfig.js';
 
 // Get all suppliers
 export const getSuppliers = async (req, res) => {
@@ -200,6 +203,177 @@ export const deleteSupplier = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to delete supplier',
+      error: error.message
+    });
+  }
+};
+
+// Send low stock alerts to suppliers
+export const sendLowStockAlerts = async (req, res) => {
+  try {
+    // Only admins can send stock alerts
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to send stock alerts'
+      });
+    }
+
+    const { items } = req.body;
+    
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide a list of low stock items'
+      });
+    }
+
+    // Get all suppliers
+    const suppliers = await Supplier.find({ active: true });
+    const supplierMap = {};
+    suppliers.forEach(supplier => {
+      supplierMap[supplier._id.toString()] = supplier;
+    });
+
+    // Get reorder configuration to find preferred suppliers
+    const reorderConfigs = await ReorderConfig.find();
+    const configMap = {};
+    reorderConfigs.forEach(config => {
+      configMap[config.equipment.toString()] = config;
+    });
+
+    // Group items by supplier
+    const supplierItems = {};
+    
+    // Process each item
+    for (const item of items) {
+      const equipment = await CampingEquipment.findById(item.id);
+      if (!equipment) continue;
+      
+      // Find reorder config to get preferred supplier
+      const config = configMap[item.id];
+      let supplierId = config?.preferredSupplier?.toString();
+      
+      // If no preferred supplier in config or supplier doesn't exist, skip
+      if (!supplierId || !supplierMap[supplierId]) {
+        continue;
+      }
+      
+      // Add item to supplier's list
+      if (!supplierItems[supplierId]) {
+        supplierItems[supplierId] = [];
+      }
+      
+      supplierItems[supplierId].push({
+        id: item.id,
+        name: equipment.name,
+        quantity: item.quantity,
+        status: item.status,
+        threshold: config.threshold || 5,
+        reorderQuantity: config.reorderQuantity || 10
+      });
+    }
+    
+    // Send emails to suppliers
+    let sentCount = 0;
+    const results = [];
+    
+    for (const [supplierId, items] of Object.entries(supplierItems)) {
+      const supplier = supplierMap[supplierId];
+      
+      if (supplier && supplier.email) {
+        try {
+          await sendLowStockAlertEmail(
+            supplier.email,
+            supplier.name,
+            items
+          );
+          
+          sentCount++;
+          results.push({
+            supplier: supplier.name,
+            email: supplier.email,
+            itemCount: items.length,
+            success: true
+          });
+        } catch (emailError) {
+          console.error(`Failed to send email to supplier ${supplier.name}:`, emailError);
+          results.push({
+            supplier: supplier.name,
+            email: supplier.email,
+            itemCount: items.length,
+            success: false,
+            error: emailError.message
+          });
+        }
+      }
+    }
+    
+    res.status(200).json({
+      success: true,
+      message: `Successfully sent ${sentCount} email alerts to suppliers`,
+      sentCount,
+      totalSuppliers: Object.keys(supplierItems).length,
+      results
+    });
+  } catch (error) {
+    console.error('Error sending stock alerts:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to send stock alerts',
+      error: error.message
+    });
+  }
+};
+
+// Get products by supplier ID
+export const getSupplierProducts = async (req, res) => {
+  try {
+    // Only admins can view supplier products
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to view supplier products'
+      });
+    }
+
+    const supplierId = req.params.id;
+    
+    // Find all reorder configurations that reference this supplier
+    const reorderConfigs = await ReorderConfig.find({ 
+      preferredSupplier: supplierId 
+    }).populate('equipment');
+    
+    if (!reorderConfigs || reorderConfigs.length === 0) {
+      return res.status(200).json({
+        success: true,
+        products: [],
+        message: 'No products found for this supplier'
+      });
+    }
+    
+    // Extract and format the products data
+    const products = reorderConfigs.map(config => ({
+      _id: config.equipment._id,
+      name: config.equipment.name,
+      category: config.equipment.category,
+      quantity: config.equipment.quantity,
+      price: config.equipment.price,
+      status: config.equipment.status,
+      reorderThreshold: config.threshold,
+      reorderQuantity: config.reorderQuantity,
+      autoReorder: config.autoReorder
+    }));
+    
+    res.status(200).json({
+      success: true,
+      products
+    });
+  } catch (error) {
+    console.error('Error fetching supplier products:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch supplier products',
       error: error.message
     });
   }
