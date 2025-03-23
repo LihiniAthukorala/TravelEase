@@ -187,10 +187,10 @@ const RentalCheckoutPage = () => {
         setReceiptData(receipt);
         setOrderComplete(true);
         
-        // Clear rental items from cart (in a real app, you might want to do this after backend confirmation)
-        rentalItems.forEach(item => {
-          removeFromCart(item._id);
-        });
+        // REMOVED: The following code was removing items from cart automatically
+        // rentalItems.forEach(item => {
+        //   removeFromCart(item._id);
+        // });
         
         enqueueSnackbar('Rental order placed successfully!', { variant: 'success' });
       }, 1500);
