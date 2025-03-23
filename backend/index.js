@@ -11,7 +11,8 @@ import feedbackRoutes from './routes/feedback.js';
 import campingEquipmentRoutes from './routes/campingEquipmentRoutes.js';
 import cartRoutes from './routes/cartRoutes.js';
 import tourRoutes from './routes/tourRoutes.js';
-import bookingRoutes from './routes/bookingRoutes.js';  // Add this import
+import bookingRoutes from './routes/bookingRoutes.js';  
+import tourPaymentRoutes from './routes/tourPaymentRoutes.js'; // Add this import
 
 // Get directory name (ES module version of __dirname)
 const __filename = fileURLToPath(import.meta.url);
@@ -98,7 +99,8 @@ app.use('/api/feedback', feedbackRoutes);
 app.use('/api/camping-equipment', campingEquipmentRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/tours', tourRoutes);
-app.use('/api/booking', bookingRoutes);  // Add this line to register booking routes
+app.use('/api/booking', bookingRoutes);  
+app.use('/api/tour-payments', tourPaymentRoutes); // Add this line to register tour payment routes
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

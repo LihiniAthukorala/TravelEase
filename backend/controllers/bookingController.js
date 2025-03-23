@@ -105,6 +105,28 @@ export const getBookingsByTour = async (req, res) => {
   }
 };
 
+// Get a single booking by ID
+export const getBookingById = async (req, res) => {
+  try {
+    const booking = await Booking.findById(req.params.bookingId)
+      .populate('user', 'name username email')
+      .populate('tour', 'name location price');
+    
+    if (!booking) {
+      return res.status(404).json({ 
+        error: "Booking not found." 
+      });
+    }
+    
+    return res.status(200).json(booking);
+  } catch (error) {
+    console.error('Error fetching booking details:', error);
+    res.status(500).json({ 
+      error: "Something went wrong while fetching booking details." 
+    });
+  }
+};
+
 // Delete a booking
 export const deleteBooking = async (req, res) => {
   try {
@@ -128,5 +150,6 @@ export default {
   createBooking,
   getUserBookings,
   getBookingsByTour,
+  getBookingById,
   deleteBooking
 };

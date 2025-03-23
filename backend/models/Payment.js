@@ -8,7 +8,7 @@ const PaymentSchema = new mongoose.Schema({
   },
   type: {
     type: String,
-    enum: ['event', 'cart', 'general'],
+    enum: ['event', 'cart', 'general', 'tour'], // Add 'tour' to the enum array
     required: [true, 'Payment type is required']
   },
   amount: {

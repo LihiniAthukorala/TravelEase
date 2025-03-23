@@ -8,7 +8,8 @@ import {
   getAllBookings,
   getUserBookings,
   getBookingsByTour,
-  deleteBooking
+  deleteBooking,
+  getBookingById
 } from "../controllers/bookingController.js";
 
 const router = express.Router();
@@ -18,5 +19,6 @@ router.get("/bookings/user/:userId", protect, getUserBookings);
 router.get("/bookings/tour/:tourId", protect, getBookingsByTour);
 router.get("/all", protect, admin, getAllBookings);
 router.delete("/bookings/:bookingId", protect, admin, deleteBooking);
+router.get("/booking/:bookingId", protect, getBookingById);
 
 export default router;

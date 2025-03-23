@@ -9,16 +9,18 @@ import {
   getPendingPayments,
   updatePayment,
   deletePayment,
-  getAllPayments
+  getAllPayments,
+  getUserOrders
 } from '../controllers/paymentController.js';
 
 const router = express.Router();
 
-// Protected routes
+// Protected routes (regular user access)
 router.post('/submit', protect, submitPayment);
 router.get('/user-history', protect, getUserPayments);
 router.put('/:id', protect, updatePayment);
 router.delete('/:id', protect, deletePayment);
+router.get('/user-orders', protect, getUserOrders); // Make sure this doesn't have the admin middleware
 
 // Admin routes
 router.get('/', protect, admin, getAllPayments);

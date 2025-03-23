@@ -172,17 +172,10 @@ const TourDetails = () => {
 
                   {id ? (
                     <Link
-                      to={isAuthenticated ? '/payment' : '/login'}
+                      to={isAuthenticated ? '/tour-payment' : '/login'}
                       state={{ 
                         tourData: tour,
                         type: 'tour',
-                        amount: tour.price,
-                        purchaseDetails: {
-                          name: tour.name,
-                          duration: tour.duration,
-                          location: tour.location,
-                          date: tour.date
-                        }
                       }}
                       onClick={(e) => {
                         if (!isAuthenticated) {

@@ -378,6 +378,57 @@ export const getUserPayments = async (req, res) => {
   }
 };
 
+// Get user orders history
+export const getUserOrders = async (req, res) => {
+  try {
+    console.log('Fetching orders for user:', req.user._id);
+    
+    // Verify user exists in request (from middleware)
+    if (!req.user || !req.user._id) {
+      return res.status(401).json({
+        success: false,
+        message: 'Authentication required'
+      });
+    }
+    
+    // No admin check here - any authenticated user should be able to view their own orders
+    const userOrders = await Payment.find({
+      user: req.user._id,
+      type: 'cart'
+    })
+    .populate({
+      path: 'items.equipmentId',
+      select: 'name price image category'
+    })
+    .sort({ timestamp: -1 });
+
+    console.log(`Found ${userOrders.length} orders`);
+    
+    // Transform data to include equipment names and other details
+    const formattedOrders = userOrders.map(order => {
+      const formattedItems = order.items.map(item => ({
+        ...item.toObject(),
+        equipmentName: item.equipmentId ? item.equipmentId.name : 'Unknown Equipment',
+        equipmentImage: item.equipmentId ? item.equipmentId.image : null
+      }));
+      
+      return {
+        ...order.toObject(),
+        items: formattedItems
+      };
+    });
+
+    res.status(200).json(formattedOrders);
+  } catch (error) {
+    console.error('Error fetching user orders:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch user orders',
+      error: error.message
+    });
+  }
+};
+
 // Update payment (user can edit their pending or rejected payment)
 export const updatePayment = async (req, res) => {
   try {

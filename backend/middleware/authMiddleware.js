@@ -6,38 +6,33 @@ export const protect = async (req, res, next) => {
   try {
     let token;
     
-    // Check if auth header exists and starts with Bearer
-    if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+    // Check for token in Authorization header
+    if (
+      req.headers.authorization &&
+      req.headers.authorization.startsWith('Bearer')
+    ) {
+      // Get token from header
       token = req.headers.authorization.split(' ')[1];
-    }
-    
-    // Check if token exists
-    if (!token) {
-      return res.status(401).json({
+      
+      // Verify token
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      
+      // Get user from the token
+      req.user = await User.findById(decoded.id).select('-password');
+      
+      // Continue to the next middleware/controller
+      next();
+    } else {
+      res.status(401).json({
         success: false,
         message: 'Not authorized, no token'
       });
     }
-    
-    // Verify token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    
-    // Get user from token
-    req.user = await User.findById(decoded.id).select('-password');
-    
-    if (!req.user) {
-      return res.status(404).json({
-        success: false,
-        message: 'User not found'
-      });
-    }
-    
-    next();
   } catch (error) {
-    return res.status(401).json({
+    console.error('Auth middleware error:', error);
+    res.status(401).json({
       success: false,
-      message: 'Not authorized, token failed',
-      error: error.message
+      message: 'Not authorized, token failed'
     });
   }
 };

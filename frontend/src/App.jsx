@@ -52,6 +52,15 @@ import CartPage from './pages/cart/CartPage';
 import EditTour from './pages/admin/EditTour';
 import AllBookings from './pages/admin/AllBookings';
 
+import TourPaymentPage from './pages/tours/TourPaymentPage';
+
+// Add this import at the top with other imports
+import BookingDetails from './pages/admin/BookingDetails';
+
+// Add these imports at the top with other imports
+import UserBookings from './pages/user/UserBookings';
+import UserOrders from './pages/user/UserOrders';
+
 const App = () => {
   const location = useLocation();
   const hideHeader = ['/admin-dashboard', '/admin/events', '/admin/users', '/admin/approvals'].includes(location.pathname);
@@ -90,6 +99,7 @@ const App = () => {
               {/* Tour Routes */}
               <Route path="/tours" element={<TourDetails />} />
               <Route path="/tours/:id" element={<TourDetails />} />
+              <Route path="/tour-payment" element={<TourPaymentPage />} />
 
               {/* User routes */}
               <Route element={<ProtectedRoute />}>
@@ -101,6 +111,9 @@ const App = () => {
                 <Route path="/events/:id/register" element={<EventRegistration />} />
                 <Route path="/payments/history" element={<UserPaymentHistory />} />
                 <Route path="/payments/:paymentId/edit" element={<EditPayment />} />
+                {/* Add new user routes */}
+                <Route path="/user/bookings" element={<UserBookings />} />
+                <Route path="/user/orders" element={<UserOrders />} />
               </Route>
               <Route path='/admin/manage-tour' element={<ManageTour />} />
               <Route path='/admin/create-tour' element={<CreateTour />} />
@@ -112,6 +125,8 @@ const App = () => {
                 <Route path='/admin/approvals' element={<AdminEvents />} />
                 <Route path='/admin/payment-approvals' element={<PaymentApproval />} />
                 <Route path='/admin/payments/:id' element={<PaymentDetails />} />
+                <Route path='/admin/bookings/:id' element={<BookingDetails />} />
+                <Route path='/admin/all-bookings' element={<AllBookings />} />
                 <Route path='/admin/profile' element={<AdminUpdateProfile />} />
                 <Route path='/admin/events/:id' element={<EventDetail />} />
                 <Route path="/admin/camping-equipment" element={<ManageCampingEquipment />} />

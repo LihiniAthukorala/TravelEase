@@ -105,16 +105,7 @@ const UserDashboard = () => {
           {/* User Actions */}
           <div className="px-4 py-6 sm:px-0">
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-              <div className="bg-white overflow-hidden shadow rounded-lg">
-                <div className="px-4 py-5 sm:p-6">
-                  <h3 className="text-lg leading-6 font-medium text-gray-900">My Events</h3>
-                  <div className="mt-5">
-                    <Link to="/my-events" className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700">
-                      View Events
-                    </Link>
-                  </div>
-                </div>
-              </div>
+             
               
               <div className="bg-white overflow-hidden shadow rounded-lg">
                 <div className="px-4 py-5 sm:p-6">
@@ -122,6 +113,28 @@ const UserDashboard = () => {
                   <div className="mt-5">
                     <Link to="/payments/history" className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700">
                       Payment History
+                    </Link>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="bg-white overflow-hidden shadow rounded-lg">
+                <div className="px-4 py-5 sm:p-6">
+                  <h3 className="text-lg leading-6 font-medium text-gray-900">My Bookings</h3>
+                  <div className="mt-5">
+                    <Link to="/user/bookings" className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700">
+                      View Bookings
+                    </Link>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="bg-white overflow-hidden shadow rounded-lg">
+                <div className="px-4 py-5 sm:p-6">
+                  <h3 className="text-lg leading-6 font-medium text-gray-900">My Orders</h3>
+                  <div className="mt-5">
+                    <Link to="/user/orders" className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700">
+                      View Orders
                     </Link>
                   </div>
                 </div>
@@ -138,16 +151,7 @@ const UserDashboard = () => {
                 </div>
               </div>
 
-              <div className="bg-white overflow-hidden shadow rounded-lg">
-                <div className="px-4 py-5 sm:p-6">
-                  <h3 className="text-lg leading-6 font-medium text-gray-900">My Feedback</h3>
-                  <div className="mt-5">
-                    <Link to="/user-feedback" className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700">
-                      View Feedback
-                    </Link>
-                  </div>
-                </div>
-              </div>
+             
             </div>
           </div>
         </div>
