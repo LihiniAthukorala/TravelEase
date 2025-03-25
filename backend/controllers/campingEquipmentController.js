@@ -118,7 +118,7 @@ export const createEquipment = async (req, res) => {
     // Create audit log for new equipment
     const auditLog = new InventoryAuditLog({
       equipment: equipment._id,
-      actionType: 'create',
+      actionType: 'stock-in',  // Changed from 'create' to valid enum value 'stock-in'
       quantityBefore: 0,
       quantityAfter: equipment.quantity,
       statusBefore: null,
@@ -205,7 +205,7 @@ export const updateEquipment = async (req, res) => {
     // Create audit log for the update
     const auditLog = new InventoryAuditLog({
       equipment: equipment._id,
-      actionType: 'update',
+      actionType: 'update',  // This is already correct
       quantityBefore: oldQuantity,
       quantityAfter: equipment.quantity,
       statusBefore: oldStatus,
@@ -261,7 +261,7 @@ export const deleteEquipment = async (req, res) => {
     // Create audit log before deletion
     const auditLog = new InventoryAuditLog({
       equipment: equipmentId,
-      actionType: 'delete',
+      actionType: 'stock-out',  // Changed from 'delete' to valid enum value 'stock-out'
       quantityBefore: oldQuantity,
       quantityAfter: 0,
       statusBefore: oldStatus,
