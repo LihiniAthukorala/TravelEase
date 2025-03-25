@@ -10,6 +10,7 @@ function PaymentApproval() {
   const [loading, setLoading] = useState(true);
   const [admin, setAdmin] = useState(null);
   const [activeFilter, setActiveFilter] = useState('all');
+  const [searchTerm, setSearchTerm] = useState(''); // Added search term state
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -96,12 +97,38 @@ function PaymentApproval() {
 
   const handleFilter = (filter) => {
     setActiveFilter(filter);
+    applyFiltersAndSearch(filter, searchTerm);
+  };
+
+  // New function to apply both filters and search
+  const applyFiltersAndSearch = (filter, search) => {
+    let filtered = payments;
     
-    if (filter === 'all') {
-      setFilteredPayments(payments);
-    } else {
-      setFilteredPayments(payments.filter(payment => payment.status === filter));
+    // Apply status filter
+    if (filter !== 'all') {
+      filtered = filtered.filter(payment => payment.status === filter);
     }
+    
+    // Apply search filter if there's a search term
+    if (search.trim() !== '') {
+      const searchLower = search.toLowerCase();
+      filtered = filtered.filter(payment => 
+        payment.id.toString().toLowerCase().includes(searchLower) ||
+        payment.user.name.toLowerCase().includes(searchLower) ||
+        payment.user.email.toLowerCase().includes(searchLower) ||
+        payment.event.name?.toLowerCase().includes(searchLower) ||
+        payment.amount.toString().includes(searchLower)
+      );
+    }
+    
+    setFilteredPayments(filtered);
+  };
+
+  // Handle search input changes
+  const handleSearch = (e) => {
+    const newSearchTerm = e.target.value;
+    setSearchTerm(newSearchTerm);
+    applyFiltersAndSearch(activeFilter, newSearchTerm);
   };
 
   const handleApprove = async (paymentId) => {
@@ -259,7 +286,7 @@ function PaymentApproval() {
                  </Link>
                  <Link to="/admin/all-bookings" className="flex items-center px-6 py-3 rounded-md mb-1 text-gray-300 hover:bg-gray-700 hover:text-white transition-all duration-200">
                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                     <path fillRule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 001 1h14a1 1 0 001-1V4a1 1 0 00-1-1H3zm14 2H3v10h14V5z" clipRule="evenodd" />
+                     <path fillRule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 001 1h14a1 1 0 001-1V7.414l-4-4H3zm6.293 11.293a1 1 0 001.414 0L14 10l-3.293-3.293a1 1 0 00-1.414 1.414L11.586 10l-2.293 2.293a1 1 0 000 1.414z" clipRule="evenodd" />
                    </svg>
                    <span className="ml-3 font-medium">All Bookings</span>
                  </Link>
@@ -278,7 +305,7 @@ function PaymentApproval() {
                  </Link>
                  <Link to="/admin/inventory-reports" className="flex items-center px-6 py-3 rounded-md mb-1 text-gray-300 hover:bg-gray-700 hover:text-white transition-all duration-200">
                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                     <path fillRule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 001 1h14a1 1 0 001-1V4a1 1 0 00-1-1H3zm14 2H3v10h14V5z" clipRule="evenodd" />
+                     <path fillRule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 001 1h14a1 1 0 001-1V5a1 1 0 00-1-1H3zm14 2H3v10h14V5z" clipRule="evenodd" />
                    </svg>
                    <span className="ml-3 font-medium">Inventory Reports</span>
                  </Link>
@@ -354,12 +381,16 @@ function PaymentApproval() {
                 type="search" 
                 placeholder="Search payments..." 
                 className="px-4 py-2 rounded border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                value={searchTerm}
+                onChange={handleSearch}
               />
             </div>
           </div>
           <div className="p-6">
             {filteredPayments.length === 0 ? (
-              <div className="text-center py-4 text-gray-500">No payments found</div>
+              <div className="text-center py-4 text-gray-500">
+                {searchTerm ? "No payments match your search" : "No payments found"}
+              </div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
