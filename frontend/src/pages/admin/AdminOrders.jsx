@@ -7,6 +7,7 @@ function AdminOrders() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [admin, setAdmin] = useState(null);
+  const [searchTerm, setSearchTerm] = useState(''); // Added search term state
   const navigate = useNavigate();
   const { enqueueSnackbar } = useSnackbar();
 
@@ -90,6 +91,18 @@ function AdminOrders() {
     }
   };
 
+  // Filter orders based on search term
+  const filteredOrders = orders.filter(order => {
+    const searchLower = searchTerm.toLowerCase();
+    return (
+      order.id.toString().toLowerCase().includes(searchLower) ||
+      order.customerName.toLowerCase().includes(searchLower) ||
+      order.customerEmail.toLowerCase().includes(searchLower) ||
+      order.type.toLowerCase().includes(searchLower) ||
+      (order.eventDetails?.name?.toLowerCase().includes(searchLower) || false)
+    );
+  });
+
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
@@ -129,7 +142,7 @@ function AdminOrders() {
     
               <Link to="/admin/stock-tracking" className="flex items-center px-6 py-3 rounded-md mb-1 text-gray-300 hover:bg-gray-700 hover:text-white transition-all duration-200">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M5 3a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2V5a2 2 0 00-2-2H5zm9 4a1 1 0 10-2 0v6a1 1 0 102 0V7zm-3 2a1 1 0 10-2 0v4a1 1 0 102 0V9zm-3 3a1 1 0 10-2 0v1a1 1 0 102 0v-1z" clipRule="evenodd" />
+                  <path fillRule="evenodd" d="M5 3a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2V5zm9 4a1 1 0 10-2 0v6a1 1 0 102 0V7zm-3 2a1 1 0 10-2 0v4a1 1 0 102 0V9zm-3 3a1 1 0 10-2 0v1a1 1 0 102 0v-1z" clipRule="evenodd" />
                 </svg>
                 <span className="ml-3 font-medium">Stock Tracking</span>
               </Link>
@@ -233,12 +246,16 @@ function AdminOrders() {
                 type="search" 
                 placeholder="Search orders..." 
                 className="px-4 py-2 rounded border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
           </div>
           <div className="p-6">
-            {orders.length === 0 ? (
-              <div className="text-center py-4 text-gray-500">No orders found</div>
+            {filteredOrders.length === 0 ? (
+              <div className="text-center py-4 text-gray-500">
+                {searchTerm ? "No orders match your search" : "No orders found"}
+              </div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
@@ -254,7 +271,7 @@ function AdminOrders() {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {orders.map((order) => (
+                    {filteredOrders.map((order) => (
                       <tr key={order.id}>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{order.id}</td>
                         <td className="px-6 py-4 whitespace-nowrap">
