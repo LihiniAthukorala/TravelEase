@@ -52,6 +52,37 @@ const AdminUsers = () => {
     window.location.href = '/login'; // Replace navigate with direct URL redirect with refresh
   };
 
+  const handleDeleteUser = async (userId) => {
+    if (!window.confirm('Are you sure you want to delete this user?')) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      
+      if (!token) {
+        navigate('/login');
+        return;
+      }
+
+      const response = await axios.delete(`http://localhost:5001/api/auth/users/${userId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      
+      if (response.data.success) {
+        enqueueSnackbar('User deleted successfully', { variant: 'success' });
+        setUsers(users.filter(user => user._id !== userId));
+      } else {
+        enqueueSnackbar(response.data.message || 'Failed to delete user', { variant: 'error' });
+      }
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      enqueueSnackbar(error.response?.data?.message || 'Failed to delete user', { variant: 'error' });
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -194,9 +225,14 @@ const AdminUsers = () => {
                         {user.role}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <Link to={`/admin/users/${user._id}/edit`} className="text-indigo-600 hover:text-indigo-900 mr-3">Edit</Link>
-                      <button className="text-red-600 hover:text-red-900">Delete</button>
+                      <button 
+                        onClick={() => handleDeleteUser(user._id)} 
+                        className="text-red-600 hover:text-red-900"
+                      >
+                        Delete
+                      </button>
                     </td>
                   </tr>
                 ))

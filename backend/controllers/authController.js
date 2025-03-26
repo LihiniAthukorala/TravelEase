@@ -240,3 +240,139 @@ export const updateProfile = async (req, res) => {
     });
   }
 };
+
+// Get user by ID (admin only)
+export const getUserById = async (req, res) => {
+  try {
+    // Only admins can view user details
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to view user details'
+      });
+    }
+
+    const user = await User.findById(req.params.id).select('-password');
+    
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+    
+    res.status(200).json({
+      success: true,
+      user
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Server Error',
+      error: error.message
+    });
+  }
+};
+
+// Update user (admin only)
+export const updateUser = async (req, res) => {
+  try {
+    // Only admins can update users
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to update users'
+      });
+    }
+
+    const { username, email, contactNumber, address, role, department, permissions } = req.body;
+    
+    const user = await User.findById(req.params.id);
+    
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+    
+    // Update user fields
+    user.username = username;
+    user.email = email;
+    user.contactNumber = contactNumber;
+    user.address = address;
+    
+    // Only update role if it's provided
+    if (role) {
+      user.role = role;
+    }
+    
+    // Update admin-specific fields if role is admin
+    if (user.role === 'admin') {
+      user.department = department || user.department;
+      user.permissions = permissions || user.permissions;
+    }
+    
+    await user.save();
+    
+    res.status(200).json({
+      success: true,
+      message: 'User updated successfully',
+      user: {
+        id: user._id,
+        username: user.username,
+        email: user.email,
+        role: user.role
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Server Error',
+      error: error.message
+    });
+  }
+};
+
+// Delete user (admin only)
+export const deleteUser = async (req, res) => {
+  try {
+    // Only admins can delete users
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Not authorized to delete users'
+      });
+    }
+
+    const user = await User.findById(req.params.id);
+    
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+    
+    // Don't allow admins to delete themselves
+    if (user._id.toString() === req.user.id) {
+      return res.status(400).json({
+        success: false,
+        message: 'You cannot delete your own account'
+      });
+    }
+    
+    await User.findByIdAndDelete(req.params.id);
+    
+    res.status(200).json({
+      success: true,
+      message: 'User deleted successfully'
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Server Error',
+      error: error.message
+    });
+  }
+};

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Routes, Route, useLocation } from 'react-router-dom';
+import { Routes, Route, useLocation, BrowserRouter as Router } from 'react-router-dom';
 import Home from './components/Home';
 import Login from './User/Login';
 import Register from './User/Register';
@@ -62,6 +62,8 @@ import UserBookings from './pages/user/UserBookings';
 import UserOrders from './pages/user/UserOrders';
 
 import ManageSuppliers from './pages/admin/ManageSuppliers';
+
+import EditUser from './User/EditUser';
 
 const App = () => {
   const location = useLocation();
@@ -138,9 +140,7 @@ const App = () => {
                 <Route path='/admin/all-bookings' element={<AllBookings />} />
                 <Route path='/admin/manage-suppliers' element={<ManageSuppliers />} />
                 <Route path="/admin/inventory-reports" element={<InventoryReports />} /> {/* Add this route */}
-
-                
-               
+                <Route path="/admin/users/:userId/edit" element={<EditUser />} />
               </Route>
                
               
