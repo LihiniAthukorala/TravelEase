@@ -25,6 +25,10 @@ const supplierSchema = new mongoose.Schema({
     type: String,
     trim: true
   },
+  products: [{
+    type: String,
+    trim: true
+  }],
   active: {
     type: Boolean,
     default: true

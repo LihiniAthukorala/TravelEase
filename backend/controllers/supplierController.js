@@ -76,7 +76,7 @@ export const createSupplier = async (req, res) => {
       });
     }
 
-    const { name, email, phone, address, contactPerson, notes } = req.body;
+    const { name, email, phone, address, contactPerson, notes, products } = req.body;
     
     // Validate required fields
     if (!name || !email) {
@@ -102,6 +102,7 @@ export const createSupplier = async (req, res) => {
       address,
       contactPerson,
       notes,
+      products: products || [],
       createdBy: req.user._id
     });
     
@@ -133,7 +134,7 @@ export const updateSupplier = async (req, res) => {
       });
     }
 
-    const { name, email, phone, address, contactPerson, active, notes } = req.body;
+    const { name, email, phone, address, contactPerson, active, notes, products } = req.body;
     
     const supplier = await Supplier.findById(req.params.id);
     
@@ -152,6 +153,7 @@ export const updateSupplier = async (req, res) => {
     if (contactPerson !== undefined) supplier.contactPerson = contactPerson;
     if (active !== undefined) supplier.active = active;
     if (notes !== undefined) supplier.notes = notes;
+    if (products !== undefined) supplier.products = products;
     
     supplier.updatedAt = Date.now();
     

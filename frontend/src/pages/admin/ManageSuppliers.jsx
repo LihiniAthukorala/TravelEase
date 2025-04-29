@@ -10,13 +10,22 @@ function ManageSuppliers() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedSupplier, setSelectedSupplier] = useState(null);
-  const [newSupplier, setNewSupplier] = useState({ name: '', email: '', phone: '', address: '', contactPerson: '', notes: '' });
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    address: '',
+    contactPerson: '',
+    notes: '',
+    products: []
+  });
   const [formErrors, setFormErrors] = useState({});
   const [filterText, setFilterText] = useState('');
   const [sortBy, setSortBy] = useState('name');
   const [sortOrder, setSortOrder] = useState('asc');
   const [supplierProducts, setSupplierProducts] = useState([]);
   const [loadingProducts, setLoadingProducts] = useState(false);
+  const [newProduct, setNewProduct] = useState('');
   const navigate = useNavigate();
   const { enqueueSnackbar } = useSnackbar();
 
@@ -82,9 +91,9 @@ function ManageSuppliers() {
   const handleSaveSupplier = async () => {
     // Form validation
     const errors = {};
-    if (!newSupplier.name.trim()) errors.name = 'Name is required';
-    if (!newSupplier.email.trim()) errors.email = 'Email is required';
-    if (newSupplier.email.trim() && !/^\S+@\S+\.\S+$/.test(newSupplier.email)) {
+    if (!formData.name.trim()) errors.name = 'Name is required';
+    if (!formData.email.trim()) errors.email = 'Email is required';
+    if (formData.email.trim() && !/^\S+@\S+\.\S+$/.test(formData.email)) {
       errors.email = 'Please enter a valid email address';
     }
     
@@ -104,7 +113,7 @@ function ManageSuppliers() {
       
       const method = isEditing ? axios.put : axios.post;
       
-      const response = await method(url, newSupplier, {
+      const response = await method(url, formData, {
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -113,7 +122,15 @@ function ManageSuppliers() {
       
       if (response.data.success) {
         enqueueSnackbar(`Supplier ${isEditing ? 'updated' : 'added'} successfully`, { variant: 'success' });
-        setNewSupplier({ name: '', email: '', phone: '', address: '', contactPerson: '', notes: '' });
+        setFormData({
+          name: '',
+          email: '',
+          phone: '',
+          address: '',
+          contactPerson: '',
+          notes: '',
+          products: []
+        });
         setFormErrors({});
         setShowAddModal(false);
         fetchSuppliers(token);
@@ -157,17 +174,26 @@ function ManageSuppliers() {
   const openAddModal = (supplier = null) => {
     if (supplier) {
       setSelectedSupplier(supplier);
-      setNewSupplier({
+      setFormData({
         name: supplier.name || '',
         email: supplier.email || '',
         phone: supplier.phone || '',
         address: supplier.address || '',
         contactPerson: supplier.contactPerson || '',
-        notes: supplier.notes || ''
+        notes: supplier.notes || '',
+        products: supplier.products || []
       });
     } else {
       setSelectedSupplier(null);
-      setNewSupplier({ name: '', email: '', phone: '', address: '', contactPerson: '', notes: '' });
+      setFormData({
+        name: '',
+        email: '',
+        phone: '',
+        address: '',
+        contactPerson: '',
+        notes: '',
+        products: []
+      });
     }
     setFormErrors({});
     setShowAddModal(true);
@@ -207,6 +233,16 @@ function ManageSuppliers() {
     localStorage.removeItem('user');
     enqueueSnackbar('Logged out successfully', { variant: 'success' });
     window.location.href = '/login';
+  };
+
+  const handleAddProduct = () => {
+    if (newProduct.trim()) {
+      setFormData({
+        ...formData,
+        products: [...formData.products, newProduct.trim()]
+      });
+      setNewProduct('');
+    }
   };
 
   const filteredSuppliers = suppliers
@@ -526,106 +562,174 @@ function ManageSuppliers() {
       {/* Add/Edit Supplier Modal */}
       {showAddModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
-            <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-              <h3 className="text-lg font-medium">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl mx-4">
+            <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-gray-50 rounded-t-lg">
+              <h3 className="text-xl font-semibold text-gray-800">
                 {selectedSupplier ? 'Edit Supplier' : 'Add New Supplier'}
               </h3>
-              <button onClick={() => setShowAddModal(false)} className="text-gray-400 hover:text-gray-500">
+              <button 
+                onClick={() => setShowAddModal(false)} 
+                className="text-gray-400 hover:text-gray-500 transition-colors duration-200"
+              >
                 <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
             </div>
             <div className="p-6">
-              <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Supplier Name*</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Supplier Name*</label>
                   <input 
                     type="text"
-                    value={newSupplier.name}
-                    onChange={(e) => setNewSupplier({...newSupplier, name: e.target.value})}
-                    className={`mt-1 block w-full border ${formErrors.name ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
+                    value={formData.name}
+                    onChange={(e) => setFormData({...formData, name: e.target.value})}
+                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200 ${
+                      formErrors.name ? 'border-red-500' : 'border-gray-300 hover:border-gray-400'
+                    }`}
+                    placeholder="Enter supplier name"
                   />
                   {formErrors.name && <p className="mt-1 text-sm text-red-600">{formErrors.name}</p>}
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Email*</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Email*</label>
                   <input 
                     type="email"
-                    value={newSupplier.email}
-                    onChange={(e) => setNewSupplier({...newSupplier, email: e.target.value})}
-                    className={`mt-1 block w-full border ${formErrors.email ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
+                    value={formData.email}
+                    onChange={(e) => setFormData({...formData, email: e.target.value})}
+                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200 ${
+                      formErrors.email ? 'border-red-500' : 'border-gray-300 hover:border-gray-400'
+                    }`}
+                    placeholder="Enter email address"
                   />
                   {formErrors.email && <p className="mt-1 text-sm text-red-600">{formErrors.email}</p>}
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Phone</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
                   <input 
                     type="text"
-                    value={newSupplier.phone}
-                    onChange={(e) => setNewSupplier({...newSupplier, phone: e.target.value})}
-                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    value={formData.phone}
+                    onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200 hover:border-gray-400"
+                    placeholder="Enter phone number"
                   />
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Contact Person</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Contact Person</label>
                   <input 
                     type="text"
-                    value={newSupplier.contactPerson}
-                    onChange={(e) => setNewSupplier({...newSupplier, contactPerson: e.target.value})}
-                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    value={formData.contactPerson}
+                    onChange={(e) => setFormData({...formData, contactPerson: e.target.value})}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200 hover:border-gray-400"
+                    placeholder="Enter contact person name"
                   />
                 </div>
                 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Address</label>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
                   <textarea 
-                    value={newSupplier.address}
-                    onChange={(e) => setNewSupplier({...newSupplier, address: e.target.value})}
-                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    value={formData.address}
+                    onChange={(e) => setFormData({...formData, address: e.target.value})}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200 hover:border-gray-400"
                     rows="2"
+                    placeholder="Enter supplier address"
                   ></textarea>
                 </div>
                 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Notes</label>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Products</label>
+                  <div className="space-y-3">
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={newProduct}
+                        onChange={(e) => setNewProduct(e.target.value)}
+                        onKeyPress={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleAddProduct();
+                          }
+                        }}
+                        className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200 hover:border-gray-400"
+                        placeholder="Enter product name"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleAddProduct}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                      >
+                        Add Product
+                      </button>
+                    </div>
+                    
+                    {formData.products.length > 0 && (
+                      <div className="bg-gray-50 p-4 rounded-lg">
+                        <h4 className="text-sm font-medium text-gray-700 mb-2">Added Products</h4>
+                        <div className="flex flex-wrap gap-2">
+                          {formData.products.map((product, index) => (
+                            <span 
+                              key={index}
+                              className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800"
+                            >
+                              {product}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const newProducts = [...formData.products];
+                                  newProducts.splice(index, 1);
+                                  setFormData({...formData, products: newProducts});
+                                }}
+                                className="ml-2 text-blue-600 hover:text-blue-800"
+                              >
+                                ×
+                              </button>
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
                   <textarea 
-                    value={newSupplier.notes}
-                    onChange={(e) => setNewSupplier({...newSupplier, notes: e.target.value})}
-                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    value={formData.notes}
+                    onChange={(e) => setFormData({...formData, notes: e.target.value})}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200 hover:border-gray-400"
                     rows="3"
+                    placeholder="Enter any additional notes"
                   ></textarea>
                 </div>
                 
                 {selectedSupplier && (
-                  <div>
-                    <label className="flex items-center">
+                  <div className="md:col-span-2">
+                    <label className="flex items-center space-x-2">
                       <input 
                         type="checkbox" 
-                        checked={newSupplier.active !== false}
-                        onChange={(e) => setNewSupplier({...newSupplier, active: e.target.checked})}
-                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                        checked={formData.active !== false}
+                        onChange={(e) => setFormData({...formData, active: e.target.checked})}
+                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded transition-colors duration-200"
                       />
-                      <span className="ml-2 text-sm text-gray-700">Active Supplier</span>
+                      <span className="text-sm text-gray-700">Active Supplier</span>
                     </label>
                   </div>
                 )}
               </div>
             </div>
-            <div className="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3">
+            <div className="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3 bg-gray-50 rounded-b-lg">
               <button 
                 onClick={() => setShowAddModal(false)}
-                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors duration-200"
               >
                 Cancel
               </button>
               <button 
                 onClick={handleSaveSupplier}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
               >
                 {selectedSupplier ? 'Update Supplier' : 'Add Supplier'}
               </button>
@@ -705,58 +809,24 @@ function ManageSuppliers() {
                 </div>
               )}
               
-              <h4 className="text-sm font-medium text-gray-700 mb-2">Products Supplied</h4>
+              <div className="mb-6">
+                <h4 className="text-sm font-medium text-gray-700 mb-2">Products</h4>
               <div className="bg-gray-50 p-4 rounded-lg">
-                {loadingProducts ? (
-                  <div className="flex justify-center py-4">
-                    <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-blue-500"></div>
-                  </div>
-                ) : supplierProducts.length === 0 ? (
-                  <p className="text-gray-500 text-center py-4">No products associated with this supplier.</p>
-                ) : (
-                  <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          <th scope="col" className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                          <th scope="col" className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
-                          <th scope="col" className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stock</th>
-                          <th scope="col" className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                          <th scope="col" className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody className="bg-white divide-y divide-gray-200">
-                        {supplierProducts.map((product) => (
-                          <tr key={product._id} className="hover:bg-gray-50">
-                            <td className="px-4 py-2 whitespace-nowrap">{product.name}</td>
-                            <td className="px-4 py-2 whitespace-nowrap">{product.category}</td>
-                            <td className="px-4 py-2 whitespace-nowrap">{product.quantity}</td>
-                            <td className="px-4 py-2 whitespace-nowrap">
-                              <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                                product.quantity === 0 
-                                  ? 'bg-red-100 text-red-800' 
-                                  : product.quantity <= product.reorderThreshold
-                                    ? 'bg-yellow-100 text-yellow-800'
-                                    : 'bg-green-100 text-green-800'
-                              }`}>
-                                {product.quantity === 0 
-                                  ? 'Out of Stock' 
-                                  : product.quantity <= product.reorderThreshold 
-                                    ? 'Low Stock' 
-                                    : 'In Stock'}
+                  {selectedSupplier.products && selectedSupplier.products.length > 0 ? (
+                    <div className="flex flex-wrap gap-2">
+                      {selectedSupplier.products.map((product, index) => (
+                        <span 
+                          key={index}
+                          className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800"
+                        >
+                          {product}
                               </span>
-                            </td>
-                            <td className="px-4 py-2 whitespace-nowrap">
-                              <Link to={`/admin/camping-equipment`} className="text-blue-600 hover:text-blue-900">
-                                View
-                              </Link>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                      ))}
                   </div>
+                  ) : (
+                    <p className="text-gray-500">No products associated with this supplier.</p>
                 )}
+                </div>
               </div>
             </div>
             

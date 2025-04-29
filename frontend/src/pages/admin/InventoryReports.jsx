@@ -11,6 +11,187 @@ import "react-datepicker/dist/react-datepicker.css";
 import { useReactToPrint } from 'react-to-print';
 import { CSVLink } from 'react-csv';
 
+// Add print styles
+const printStyles = `
+  @media print {
+    @page {
+      margin: 1.5cm;
+      size: A4;
+    }
+
+    body {
+      background: white;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      line-height: 1.5;
+      color: #1a1a1a;
+    }
+
+    .no-print {
+      display: none !important;
+    }
+
+    .print-only {
+      display: block !important;
+    }
+
+    .page-break {
+      page-break-after: always;
+    }
+
+    .page-break-before {
+      page-break-before: always;
+    }
+
+    .avoid-break {
+      page-break-inside: avoid;
+    }
+
+    /* Modern Typography */
+    h1, h2, h3, h4, h5, h6 {
+      color: #1a1a1a;
+      font-weight: 600;
+      margin-bottom: 0.75em;
+    }
+
+    h1 {
+      font-size: 2em;
+      letter-spacing: -0.025em;
+    }
+
+    h2 {
+      font-size: 1.5em;
+      letter-spacing: -0.025em;
+    }
+
+    h3 {
+      font-size: 1.25em;
+    }
+
+    /* Modern Card Styling */
+    .bg-white {
+      background-color: white !important;
+      border: 1px solid #e5e7eb !important;
+      border-radius: 0.5rem !important;
+      padding: 1.5rem !important;
+      margin-bottom: 1.5rem !important;
+    }
+
+    .shadow {
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+    }
+
+    /* Modern Table Styling */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 1.5rem;
+    }
+
+    th {
+      background-color: #f8fafc !important;
+      color: #1a1a1a !important;
+      font-weight: 600;
+      text-transform: uppercase;
+      font-size: 0.75rem;
+      letter-spacing: 0.05em;
+      padding: 0.75rem 1rem;
+      border-bottom: 2px solid #e5e7eb;
+    }
+
+    td {
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    /* Modern Status Badges */
+    .bg-red-100 {
+      background-color: #fee2e2 !important;
+      color: #991b1b !important;
+      padding: 0.25rem 0.75rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 500;
+    }
+
+    .bg-yellow-100 {
+      background-color: #fef3c7 !important;
+      color: #92400e !important;
+      padding: 0.25rem 0.75rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 500;
+    }
+
+    /* Modern Grid Layout */
+    .grid {
+      display: grid;
+      gap: 1.5rem;
+    }
+
+    .grid-cols-1 {
+      grid-template-columns: repeat(1, minmax(0, 1fr));
+    }
+
+    .grid-cols-2 {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .grid-cols-3 {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    /* Modern Stats Cards */
+    .text-3xl {
+      font-size: 2rem;
+      font-weight: 700;
+      color: #1a1a1a;
+      margin-top: 0.5rem;
+    }
+
+    .text-gray-500 {
+      color: #64748b !important;
+      font-size: 0.875rem;
+      font-weight: 500;
+    }
+
+    /* Modern Chart Containers */
+    .h-64 {
+      height: 16rem;
+      margin-bottom: 1.5rem;
+    }
+
+    /* Print Header */
+    .print-header {
+      text-align: center;
+      margin-bottom: 2rem;
+      padding-bottom: 1.5rem;
+      border-bottom: 2px solid #e5e7eb;
+    }
+
+    .print-header h1 {
+      margin-bottom: 0.5rem;
+    }
+
+    .print-header p {
+      color: #64748b;
+      font-size: 0.875rem;
+    }
+
+    /* Modern Colors */
+    .text-blue-800 { color: #1e40af !important; }
+    .text-red-800 { color: #991b1b !important; }
+    .text-yellow-800 { color: #92400e !important; }
+    .bg-blue-100 { background-color: #dbeafe !important; }
+    .bg-red-100 { background-color: #fee2e2 !important; }
+    .bg-yellow-100 { background-color: #fef3c7 !important; }
+    .bg-gray-50 { background-color: #f8fafc !important; }
+  }
+`;
+
 function InventoryReports() {
   const [loading, setLoading] = useState(true);
   const [admin, setAdmin] = useState(null);
@@ -24,6 +205,11 @@ function InventoryReports() {
   const [endDate, setEndDate] = useState(new Date());
   const [refreshing, setRefreshing] = useState(false);
   const [exportFormat, setExportFormat] = useState('csv');
+  const [totalItems, setTotalItems] = useState(0);
+  const [totalEquipment, setTotalEquipment] = useState(0);
+  const [campingEquipment, setCampingEquipment] = useState([]);
+  const [categoryData, setCategoryData] = useState([]);
+  const [statusData, setStatusData] = useState([]);
   
   const navigate = useNavigate();
   const { enqueueSnackbar } = useSnackbar();
@@ -60,6 +246,8 @@ function InventoryReports() {
         await fetchTrendingProducts(token);
         await fetchSeasonalPatterns(token);
         await fetchValueHistory(token);
+        await fetchTotalItems(token);
+        await fetchCampingEquipment(token);
       } catch (error) {
         console.error('Error fetching admin data:', error);
         enqueueSnackbar('Failed to load admin data. Please login again.', { variant: 'error' });
@@ -73,6 +261,27 @@ function InventoryReports() {
     
     fetchAdminData();
   }, [navigate, enqueueSnackbar]);
+
+  // Update category and status data when statsData changes
+  useEffect(() => {
+    if (statsData?.categoryBreakdown) {
+      const newCategoryData = Object.keys(statsData.categoryBreakdown).map((key, index) => ({
+        name: key,
+        value: statsData.categoryBreakdown[key].quantity,
+        color: COLORS[index % COLORS.length]
+      }));
+      setCategoryData(newCategoryData);
+    }
+
+    if (statsData?.statusBreakdown) {
+      const newStatusData = Object.keys(statsData.statusBreakdown).map((key, index) => ({
+        name: key,
+        value: statsData.statusBreakdown[key].count,
+        color: COLORS[index % COLORS.length]
+      }));
+      setStatusData(newStatusData);
+    }
+  }, [statsData]);
 
   const fetchInventoryStats = async (token) => {
     try {
@@ -170,6 +379,101 @@ function InventoryReports() {
     }
   };
 
+  const fetchTotalItems = async (token) => {
+    try {
+      const response = await axios.get('http://localhost:5001/api/camping-equipment', {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      
+      if (response.data.success) {
+        setCampingEquipment(response.data.equipment);
+        
+        // Calculate total equipment (number of unique items)
+        setTotalEquipment(response.data.equipment.length);
+        
+        // Calculate total items in stock (sum of all quantities)
+        const totalQuantity = response.data.equipment.reduce((sum, item) => sum + (item.quantity || 0), 0);
+        setTotalItems(totalQuantity);
+      }
+    } catch (error) {
+      console.error('Error fetching camping equipment:', error);
+      enqueueSnackbar('Failed to fetch camping equipment data', { variant: 'error' });
+    }
+  };
+
+  const fetchCampingEquipment = async (token) => {
+    try {
+      const response = await axios.get('http://localhost:5001/api/camping-equipment', {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      
+      if (response.data.success) {
+        setCampingEquipment(response.data.equipment);
+        
+        // Calculate total equipment (number of unique items)
+        setTotalEquipment(response.data.equipment.length);
+        
+        // Calculate total items in stock (sum of all quantities)
+        const totalQuantity = response.data.equipment.reduce((sum, item) => sum + (item.quantity || 0), 0);
+        setTotalItems(totalQuantity);
+
+        // Calculate category and status distributions
+        calculateDistributions(response.data.equipment);
+      }
+    } catch (error) {
+      console.error('Error fetching camping equipment:', error);
+      enqueueSnackbar('Failed to fetch camping equipment data', { variant: 'error' });
+    }
+  };
+
+  const calculateDistributions = (equipment) => {
+    // Calculate Category Distribution
+    const categoryCounts = equipment.reduce((acc, item) => {
+      const category = item.category || 'Uncategorized';
+      acc[category] = (acc[category] || 0) + 1;
+      return acc;
+    }, {});
+
+    const categoryChartData = Object.entries(categoryCounts).map(([name, value], index) => ({
+      name,
+      value,
+      color: COLORS[index % COLORS.length]
+    }));
+
+    setCategoryData(categoryChartData);
+
+    // Calculate Status Distribution
+    const statusCounts = equipment.reduce((acc, item) => {
+      let status = 'In Stock';
+      if (item.quantity === 0) {
+        status = 'Out of Stock';
+      } else if (item.quantity < 5) {
+        status = 'Low Stock';
+      }
+      acc[status] = (acc[status] || 0) + 1;
+      return acc;
+    }, {});
+
+    const statusChartData = Object.entries(statusCounts).map(([name, value], index) => ({
+      name,
+      value,
+      color: COLORS[index % COLORS.length]
+    }));
+
+    setStatusData(statusChartData);
+  };
+
+  // Update distributions when camping equipment changes
+  useEffect(() => {
+    if (campingEquipment.length > 0) {
+      calculateDistributions(campingEquipment);
+    }
+  }, [campingEquipment]);
+
   const handleCategoryChange = (e) => {
     setSelectedCategory(e.target.value);
   };
@@ -214,7 +518,17 @@ function InventoryReports() {
   const handlePrint = useReactToPrint({
     content: () => printRef.current,
     documentTitle: "Inventory Report",
+    onBeforeGetContent: () => {
+      // Add print styles to the document
+      const style = document.createElement('style');
+      style.innerHTML = printStyles;
+      document.head.appendChild(style);
+      return Promise.resolve();
+    },
     onAfterPrint: () => {
+      // Remove print styles after printing
+      const style = document.querySelector('style[data-print-styles]');
+      if (style) style.remove();
       enqueueSnackbar('PDF generated successfully', { variant: 'success' });
     },
     onPrintError: () => {
@@ -306,109 +620,95 @@ function InventoryReports() {
     );
   }
 
-  // Prepare data for category distribution chart
-  const categoryData = statsData?.categoryBreakdown ? 
-    Object.keys(statsData.categoryBreakdown).map((key, index) => ({
-      name: key,
-      value: statsData.categoryBreakdown[key].quantity,
-      color: COLORS[index % COLORS.length]
-    })) : [];
-
-  // Prepare data for status distribution chart
-  const statusData = statsData?.statusBreakdown ?
-    Object.keys(statsData.statusBreakdown).map((key, index) => ({
-      name: key,
-      value: statsData.statusBreakdown[key].count,
-      color: COLORS[index % COLORS.length]
-    })) : [];
-
   return (
     <div className="min-h-screen bg-gray-100">
-        {/* Sidebar */}
-               <div className="fixed inset-y-0 left-0 w-64 bg-gray-900 text-white">
-                 <div className="p-6">
-                   <h2 className="text-2xl font-bold">Admin Panel</h2>
-                   <p className="text-gray-400 text-sm">Online Tourism and Travel Management System</p>
-                 </div>
-                 <nav className="mt-5">
-                   <Link to="/admin-dashboard" className="flex items-center px-6 py-3 rounded-md mb-1 bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 transition-all duration-200">
-                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                       <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
-                     </svg>
-                     <span className="ml-3 font-medium">Dashboard</span>
-                   </Link>
-                   <Link to="/admin/users" className="flex items-center px-6 py-3 rounded-md mb-1 text-gray-300 hover:bg-gray-700 hover:text-white transition-all duration-200">
-                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                       <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
-                     </svg>
-                     <span className="ml-3 font-medium">Users</span>
-                   </Link>
-         
-                   <Link to="/admin/stock-tracking" className="flex items-center px-6 py-3 rounded-md mb-1 text-gray-300 hover:bg-gray-700 hover:text-white transition-all duration-200">
-                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                       <path fillRule="evenodd" d="M5 3a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2V5a2 2 0 00-2-2H5zm9 4a1 1 0 10-2 0v6a1 1 0 102 0V7zm-3 2a1 1 0 10-2 0v4a1 1 0 102 0V9zm-3 3a1 1 0 10-2 0v1a1 1 0 102 0v-1z" clipRule="evenodd" />
-                     </svg>
-                     <span className="ml-3 font-medium">Stock Tracking</span>
-                   </Link>
-                   <Link to="/admin/camping-equipment" className="flex items-center px-6 py-3 rounded-md mb-1 bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 transition-all duration-200">
-                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                       <path d="M7 3a1 1 0 000 2h6a1 1 0 100-2H7zM4 7a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1zM2 11a2 2 0 012-2h12a2 2 0 012 2v4a2 2 0 01-2 2H4a2 2 0 01-2-2v-4z" />
-                     </svg>
-                     <span className="ml-3 font-medium">Camping Equipment</span>
-                   </Link>
-                   <Link to="/admin/orders" className="flex items-center px-6 py-3 rounded-md mb-1 text-gray-300 hover:bg-gray-700 hover:text-white transition-all duration-200">
-                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                       <path fillRule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 001 1h14a1 1 0 001-1V4a1 1 0 00-1-1H3zm14 2H3v10h14V5z" clipRule="evenodd" />
-                     </svg>
-                     <span className="ml-3 font-medium">Orders</span>
-                   </Link>
-                   <Link to="/admin/all-bookings" className="flex items-center px-6 py-3 rounded-md mb-1 text-gray-300 hover:bg-gray-700 hover:text-white transition-all duration-200">
-                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                       <path fillRule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 001 1h14a1 1 0 001-1V4a1 1 0 00-1-1H3zm14 2H3v10h14V5z" clipRule="evenodd" />
-                     </svg>
-                     <span className="ml-3 font-medium">All Bookings</span>
-                   </Link>
-         
-                   <Link to="/admin/manage-tour" className="flex items-center px-6 py-3 rounded-md mb-1 text-gray-300 hover:bg-gray-700 hover:text-white transition-all duration-200">
-                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                       <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
-                     </svg>
-                     <span className="ml-3 font-medium">Manage Tour</span>
-                   </Link>
-                   <Link to="/admin/manage-suppliers" className="flex items-center px-6 py-3 rounded-md mb-1 bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 transition-all duration-200">
-                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                       <path d="M8 5a1 1 0 100 2h5.586l-1.293 1.293a1 1 0 001.414 1.414l3-3a1 1 0 000-1.414l-3-3a1 1 0 10-1.414 1.414L13.586 5H8zM12 15a1 1 0 100-2H6.414l1.293-1.293a1 1 0 10-1.414-1.414l-3 3a1 1 0 000 1.414l3 3a1 1 0 001.414-1.414L6.414 15H12z" />
-                     </svg>
-                     <span className="ml-3 font-medium">Suppliers</span>
-                   </Link>
-                   <Link to="/admin/inventory-reports" className="flex items-center px-6 py-3 rounded-md mb-1 text-gray-300 hover:bg-gray-700 hover:text-white transition-all duration-200">
-                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                       <path fillRule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 001 1h14a1 1 0 001-1V4a1 1 0 00-1-1H3zm14 2H3v10h14V5z" clipRule="evenodd" />
-                     </svg>
-                     <span className="ml-3 font-medium">Inventory Reports</span>
-                   </Link>
-                   
-                   
-         
-                   <div className="pt-2 mt-2 border-t border-gray-700">
-                     <button
-                       onClick={handleLogout}
-                       className="flex items-center w-full px-6 py-3 rounded-md text-gray-300 hover:bg-red-600 hover:text-white transition-all duration-200"
-                     >
-                       <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                         <path fillRule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 001 1h12a1 1 0 001-1V7.414l-4-4H3zm6.293 11.293a1 1 0 001.414 0L14 10l-3.293-3.293a1 1 0 00-1.414 1.414L11.586 10l-2.293 2.293a1 1 0 000 1.414z" clipRule="evenodd" />
-                       </svg>
-                       <span className="ml-3 font-medium">Logout</span>
-                     </button>
-                   </div>
-                 </nav>
-               </div>
-     
+      {/* Add print styles */}
+      <style dangerouslySetInnerHTML={{ __html: printStyles }} />
+      
+      {/* Sidebar */}
+      <div className="fixed inset-y-0 left-0 w-64 bg-gray-900 text-white">
+        <div className="p-6">
+          <h2 className="text-2xl font-bold">Admin Panel</h2>
+          <p className="text-gray-400 text-sm">Online Tourism and Travel Management System</p>
+        </div>
+        <nav className="mt-5">
+          <Link to="/admin-dashboard" className="flex items-center px-6 py-3 rounded-md mb-1 bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 transition-all duration-200">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
+            </svg>
+            <span className="ml-3 font-medium">Dashboard</span>
+          </Link>
+          <Link to="/admin/users" className="flex items-center px-6 py-3 rounded-md mb-1 text-gray-300 hover:bg-gray-700 hover:text-white transition-all duration-200">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
+            </svg>
+            <span className="ml-3 font-medium">Users</span>
+          </Link>
+
+          <Link to="/admin/stock-tracking" className="flex items-center px-6 py-3 rounded-md mb-1 text-gray-300 hover:bg-gray-700 hover:text-white transition-all duration-200">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M5 3a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2V5a2 2 0 00-2-2H5zm9 4a1 1 0 10-2 0v6a1 1 0 102 0V7zm-3 2a1 1 0 10-2 0v4a1 1 0 102 0V9zm-3 3a1 1 0 10-2 0v1a1 1 0 102 0v-1z" clipRule="evenodd" />
+            </svg>
+            <span className="ml-3 font-medium">Stock Tracking</span>
+          </Link>
+          <Link to="/admin/camping-equipment" className="flex items-center px-6 py-3 rounded-md mb-1 bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 transition-all duration-200">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M7 3a1 1 0 000 2h6a1 1 0 100-2H7zM4 7a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1zM2 11a2 2 0 012-2h12a2 2 0 012 2v4a2 2 0 01-2 2H4a2 2 0 01-2-2v-4z" />
+            </svg>
+            <span className="ml-3 font-medium">Camping Equipment</span>
+          </Link>
+          <Link to="/admin/orders" className="flex items-center px-6 py-3 rounded-md mb-1 text-gray-300 hover:bg-gray-700 hover:text-white transition-all duration-200">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 001 1h14a1 1 0 001-1V4a1 1 0 00-1-1H3zm14 2H3v10h14V5z" clipRule="evenodd" />
+            </svg>
+            <span className="ml-3 font-medium">Orders</span>
+          </Link>
+          <Link to="/admin/all-bookings" className="flex items-center px-6 py-3 rounded-md mb-1 text-gray-300 hover:bg-gray-700 hover:text-white transition-all duration-200">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 001 1h14a1 1 0 001-1V4a1 1 0 00-1-1H3zm14 2H3v10h14V5z" clipRule="evenodd" />
+            </svg>
+            <span className="ml-3 font-medium">All Bookings</span>
+          </Link>
+
+          <Link to="/admin/manage-tour" className="flex items-center px-6 py-3 rounded-md mb-1 text-gray-300 hover:bg-gray-700 hover:text-white transition-all duration-200">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
+            </svg>
+            <span className="ml-3 font-medium">Manage Tour</span>
+          </Link>
+          <Link to="/admin/manage-suppliers" className="flex items-center px-6 py-3 rounded-md mb-1 bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 transition-all duration-200">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M8 5a1 1 0 100 2h5.586l-1.293 1.293a1 1 0 001.414 1.414l3-3a1 1 0 000-1.414l-3-3a1 1 0 10-1.414 1.414L13.586 5H8zM12 15a1 1 0 100-2H6.414l1.293-1.293a1 1 0 10-1.414-1.414l-3 3a1 1 0 000 1.414l3 3a1 1 0 001.414-1.414L6.414 15H12z" />
+            </svg>
+            <span className="ml-3 font-medium">Suppliers</span>
+          </Link>
+          <Link to="/admin/inventory-reports" className="flex items-center px-6 py-3 rounded-md mb-1 text-gray-300 hover:bg-gray-700 hover:text-white transition-all duration-200">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 001 1h14a1 1 0 001-1V4a1 1 0 00-1-1H3zm14 2H3v10h14V5z" clipRule="evenodd" />
+            </svg>
+            <span className="ml-3 font-medium">Inventory Reports</span>
+          </Link>
+          
+          
+
+          <div className="pt-2 mt-2 border-t border-gray-700">
+            <button
+              onClick={handleLogout}
+              className="flex items-center w-full px-6 py-3 rounded-md text-gray-300 hover:bg-red-600 hover:text-white transition-all duration-200"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 001 1h12a1 1 0 001-1V7.414l-4-4H3zm6.293 11.293a1 1 0 001.414 0L14 10l-3.293-3.293a1 1 0 00-1.414 1.414L11.586 10l-2.293 2.293a1 1 0 000 1.414z" clipRule="evenodd" />
+              </svg>
+              <span className="ml-3 font-medium">Logout</span>
+            </button>
+          </div>
+        </nav>
+      </div>
 
       {/* Main Content */}
       <div className="ml-64 p-8">
         {/* Header */}
-        <div className="flex justify-between items-center mb-8">
+        <div className="flex justify-between items-center mb-8 no-print">
           <h1 className="text-3xl font-bold">Inventory Reports</h1>
           <div className="flex items-center space-x-4">
             <button
@@ -444,8 +744,14 @@ function InventoryReports() {
           </div>
         </div>
 
+        {/* Print Header */}
+        <div className="print-only print-header">
+          <h1>Inventory Report</h1>
+          <p>Generated on {new Date().toLocaleDateString()}</p>
+        </div>
+
         {/* Tab Navigation */}
-        <div className="bg-white rounded-lg p-4 mb-8">
+        <div className="bg-white rounded-lg p-4 mb-8 no-print">
           <div className="flex border-b overflow-x-auto">
             <button 
               className={`px-4 py-2 whitespace-nowrap ${activeTab === 'overview' ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-600'}`}
@@ -453,40 +759,22 @@ function InventoryReports() {
             >
               Overview
             </button>
-            <button 
-              className={`px-4 py-2 whitespace-nowrap ${activeTab === 'trending' ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-600'}`}
-              onClick={() => setActiveTab('trending')}
-            >
-              Trending Products
-            </button>
-            <button 
-              className={`px-4 py-2 whitespace-nowrap ${activeTab === 'seasonal' ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-600'}`}
-              onClick={() => setActiveTab('seasonal')}
-            >
-              Seasonal Patterns
-            </button>
-            <button 
-              className={`px-4 py-2 whitespace-nowrap ${activeTab === 'value' ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-600'}`}
-              onClick={() => setActiveTab('value')}
-            >
-              Value History
-            </button>
           </div>
         </div>
 
-        <div ref={printRef}>
+        <div ref={printRef} className="print-container">
           {/* Content based on active tab */}
           {activeTab === 'overview' && (
             <>
               {/* Inventory Summary Stats */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 avoid-break">
                 <div className="bg-white rounded-lg shadow p-6">
                   <h3 className="text-gray-500 text-sm font-medium">Total Equipment</h3>
-                  <p className="text-3xl font-bold">{statsData?.totalEquipment || 0}</p>
+                  <p className="text-3xl font-bold">{totalEquipment}</p>
                 </div>
                 <div className="bg-white rounded-lg shadow p-6">
                   <h3 className="text-gray-500 text-sm font-medium">Total Items in Stock</h3>
-                  <p className="text-3xl font-bold">{statsData?.totalQuantity || 0}</p>
+                  <p className="text-3xl font-bold">{totalItems}</p>
                 </div>
                 <div className="bg-white rounded-lg shadow p-6">
                   <h3 className="text-gray-500 text-sm font-medium">Total Inventory Value</h3>
@@ -495,7 +783,7 @@ function InventoryReports() {
               </div>
 
               {/* Status Summary */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 avoid-break">
                 <div className="bg-white rounded-lg shadow p-6">
                   <h3 className="text-lg font-medium mb-4">Status Distribution</h3>
                   <div className="h-64">
@@ -551,7 +839,7 @@ function InventoryReports() {
 
               {/* Low Stock Warning */}
               {statsData?.lowStockItems && statsData.lowStockItems.length > 0 && (
-                <div className="bg-white rounded-lg shadow p-6 mb-8">
+                <div className="bg-white rounded-lg shadow p-6 mb-8 avoid-break">
                   <div className="flex justify-between items-center mb-4">
                     <h3 className="text-lg font-medium">Low Stock Items</h3>
                     <Link 
@@ -838,7 +1126,7 @@ function InventoryReports() {
         </div>
 
         {/* Export Options */}
-        <div className="flex justify-end mt-8 space-x-4 mb-8">
+        <div className="flex justify-end mt-8 space-x-4 mb-8 no-print">
           {getExportButton()}
         </div>
       </div>
