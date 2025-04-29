@@ -80,12 +80,14 @@ function StockTracking() {
         
         // Generate stock alerts for items with low quantity
         const alerts = equipmentData
-          .filter(item => item.quantity < reorderThreshold) // Items below threshold
+          .filter(item => item.quantity <= reorderThreshold) // Changed to <= to include items at threshold
           .map(item => ({
             id: item._id,
             name: item.name,
             quantity: item.quantity,
-            status: item.quantity === 0 ? 'Out of Stock' : 'Low Stock'
+            status: item.quantity === 0 ? 'Out of Stock' : 'Low Stock',
+            category: item.category,
+            price: item.price
           }));
         
         setStockAlerts(alerts);
@@ -203,10 +205,26 @@ function StockTracking() {
     
     // Also show in-app notifications
     alerts.forEach(alert => {
-      enqueueSnackbar(`${alert.status}: ${alert.name} - ${alert.quantity} units remaining`, { 
-        variant: alert.quantity === 0 ? 'error' : 'warning',
-        autoHideDuration: 5000
-      });
+      enqueueSnackbar(
+        `${alert.status}: ${alert.name} - ${alert.quantity} units remaining`, 
+        { 
+          variant: alert.quantity === 0 ? 'error' : 'warning',
+          autoHideDuration: 5000,
+          action: (key) => (
+            <button 
+              onClick={() => {
+                const product = products.find(p => p._id === alert.id);
+                if (product) {
+                  openSupplierModal(product);
+                }
+              }}
+              className="text-white bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded text-sm"
+            >
+              Order Now
+            </button>
+          )
+        }
+      );
     });
   };
 
@@ -650,33 +668,8 @@ function StockTracking() {
                 Manage Suppliers
               </Link>
             </div>
-            <div className="flex items-center ml-auto">
-              <label htmlFor="threshold" className="mr-2 text-gray-700">Reorder Threshold:</label>
-              <input 
-                id="threshold"
-                type="number"
-                min="1"
-                max="100"
-                value={reorderThreshold} 
-                onChange={(e) => setReorderThreshold(parseInt(e.target.value))}
-                className="w-16 px-2 py-1 border border-gray-300 rounded"
-              />
-            </div>
             <div className="flex items-center">
-              <label htmlFor="supplierFilter" className="mr-2 text-gray-700">Filter by Supplier:</label>
-              <select 
-                id="supplierFilter"
-                value={filterSupplier}
-                onChange={(e) => setFilterSupplier(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="all">All Suppliers</option>
-                {suppliers.map(supplier => (
-                  <option key={supplier._id} value={supplier._id}>
-                    {supplier.name}
-                  </option>
-                ))}
-              </select>
+              
             </div>
           </div>
         </div>
@@ -684,7 +677,18 @@ function StockTracking() {
         {/* Stock Alerts */}
         <div className="bg-white rounded-lg shadow overflow-hidden mb-8">
           <div className="px-6 py-5 border-b border-gray-200">
-            <h3 className="text-lg font-medium text-red-600">Stock Alerts</h3>
+            <div className="flex justify-between items-center">
+              <h3 className="text-lg font-medium text-red-600">Stock Alerts</h3>
+              <div className="flex items-center space-x-2">
+                <span className="text-sm text-gray-500">Threshold: {reorderThreshold} units</span>
+                <button
+                  onClick={() => setShowReorderModal(true)}
+                  className="text-sm text-blue-600 hover:text-blue-800"
+                >
+                  Configure
+                </button>
+              </div>
+            </div>
           </div>
           <div className="p-6">
             {stockAlerts.length === 0 ? (
@@ -699,19 +703,17 @@ function StockTracking() {
                     }`}
                   >
                     <div className="font-semibold">{alert.name}</div>
+                    <div className="text-sm text-gray-600 mt-1">{alert.category}</div>
                     <div className="flex justify-between items-center mt-2">
                       <span className={`text-sm ${alert.status === 'Out of Stock' ? 'text-red-600' : 'text-yellow-600'}`}>
                         {alert.status}
                       </span>
                       <span className="font-bold">{alert.quantity} units</span>
                     </div>
+                    <div className="mt-2 text-sm text-gray-600">
+                      Value: LKR {(alert.price * alert.quantity).toFixed(2)}
+                    </div>
                     <div className="mt-3 pt-2 border-t border-gray-200 flex justify-end space-x-2">
-                      <button
-                        onClick={() => openReorderModal(products.find(p => p._id === alert.id))}
-                        className="text-xs px-2 py-1 bg-blue-100 text-blue-600 rounded hover:bg-blue-200"
-                      >
-                        Set Reorder
-                      </button>
                       <button
                         onClick={() => openSupplierModal(products.find(p => p._id === alert.id))}
                         className="text-xs px-2 py-1 bg-green-100 text-green-600 rounded hover:bg-green-200"
@@ -789,12 +791,7 @@ function StockTracking() {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      <button
-                        onClick={() => openReorderModal(product)}
-                        className="mr-2 text-blue-600 hover:text-blue-800"
-                      >
-                        Set Reorder
-                      </button>
+                      
                       <button
                         onClick={() => openSupplierModal(product)}
                         className="text-green-600 hover:text-green-800"

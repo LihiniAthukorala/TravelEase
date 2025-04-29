@@ -230,7 +230,7 @@ const Home = () => {
       {/* Hero Section */}
       <section
         className="relative bg-cover bg-center text-white py-20 px-4"
-        style={{ backgroundImage: "url('img2.jpeg')" }}>
+        style={{ backgroundImage: "url('https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fHx8fHx8&auto=format&fit=crop&w=1920&q=80')" }}>
         <div className="max-w-6xl mx-auto text-center">
           <h1 className="text-5xl font-bold mb-4">Discover Amazing Travel Planning</h1>
           <p className="text-xl mb-8">Find and book travel experiences and get the equipment you need</p>
