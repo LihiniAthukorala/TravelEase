@@ -104,8 +104,8 @@ function PaymentForm() {
   };
 
   const validateCVV = (cvv) => {
-    const cvvRegex = /^[0-9]{3,4}$/;
-    return cvvRegex.test(cvv) ? '' : 'CVV must be 3 or 4 digits';
+    const cvvRegex = /^[0-9]{3}$/;
+    return cvvRegex.test(cvv) ? '' : 'CVV must be exactly 3 digits';
   };
 
   const validateAmount = (amount) => {
@@ -129,7 +129,7 @@ function PaymentForm() {
       }
       setFormData({ ...formData, [name]: formattedValue });
     } else if (name === 'cvv') {
-      const digitsOnly = value.replace(/\D/g, '').substring(0, 4);
+      const digitsOnly = value.replace(/\D/g, '').substring(0, 3);
       setFormData({ ...formData, [name]: digitsOnly });
     } else {
       setFormData({ ...formData, [name]: value });
@@ -457,7 +457,7 @@ function PaymentForm() {
                     value={formData.cvv}
                     onChange={handleInputChange}
                     placeholder="123"
-                    maxLength={4}
+                    maxLength={3}
                     required
                   />
                   <span className="cvv-tooltip" title="3-digit code on back of your card">?</span>

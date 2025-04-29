@@ -76,13 +76,14 @@ function AllBookings() {
       const token = localStorage.getItem('token');
       
       if (bookingType === 'regular') {
+        // For regular bookings
         await axios.delete(`http://localhost:5001/api/booking/bookings/${bookingId}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         setBookings(bookings.filter(booking => booking._id !== bookingId));
       } else {
-        // For tour bookings, use the appropriate endpoint
-        await axios.delete(`http://localhost:5001/api/payments/${bookingId}`, {
+        // For tour bookings - using the payment route
+        await axios.delete(`http://localhost:5001/api/payment/${bookingId}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         setTourBookings(tourBookings.filter(booking => booking._id !== bookingId));
@@ -90,7 +91,9 @@ function AllBookings() {
       
       enqueueSnackbar('Booking deleted successfully', { variant: 'success' });
     } catch (error) {
-      enqueueSnackbar('Error deleting booking', { variant: 'error' });
+      console.error('Error deleting booking:', error);
+      const errorMessage = error.response?.data?.message || 'Error deleting booking';
+      enqueueSnackbar(errorMessage, { variant: 'error' });
     }
   };
   
