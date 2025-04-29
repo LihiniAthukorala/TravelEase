@@ -84,13 +84,13 @@ EMAIL_PASS=your_email_password
 5. Start the backend server:
 ```bash
 cd backend
-npm start
+npm run start
 ```
 
 6. Start the frontend development server:
 ```bash
 cd frontend
-npm start
+npm run dev
 ```
 
 ## API Endpoints
