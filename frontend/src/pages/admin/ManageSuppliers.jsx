@@ -88,20 +88,47 @@ function ManageSuppliers() {
     }
   };
 
-  const handleSaveSupplier = async () => {
-    // Form validation
+  const validateForm = () => {
     const errors = {};
-    if (!formData.name.trim()) errors.name = 'Name is required';
-    if (!formData.email.trim()) errors.email = 'Email is required';
-    if (formData.email.trim() && !/^\S+@\S+\.\S+$/.test(formData.email)) {
+    
+    // Name validation
+    if (!formData.name.trim()) {
+      errors.name = 'Name is required';
+    } else if (formData.name.length < 3) {
+      errors.name = 'Name must be at least 3 characters';
+    }
+
+    // Email validation
+    if (!formData.email.trim()) {
+      errors.email = 'Email is required';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       errors.email = 'Please enter a valid email address';
     }
-    
-    if (Object.keys(errors).length > 0) {
-      setFormErrors(errors);
+
+    // Phone validation
+    if (formData.phone && !/^[0-9+\-\s()]{10}$/.test(formData.phone)) {
+      errors.phone = 'Please enter a valid phone number';
+    }
+
+    // Address validation
+    if (formData.address && formData.address.length < 5) {
+      errors.address = 'Address must be at least 5 characters';
+    }
+
+    // Contact Person validation
+    if (formData.contactPerson && formData.contactPerson.length < 3) {
+      errors.contactPerson = 'Contact person name must be at least 3 characters';
+    }
+
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleSaveSupplier = async () => {
+    if (!validateForm()) {
       return;
     }
-    
+
     try {
       const token = localStorage.getItem('token');
       if (!token) return;
@@ -583,7 +610,11 @@ function ManageSuppliers() {
                   <input 
                     type="text"
                     value={formData.name}
-                    onChange={(e) => setFormData({...formData, name: e.target.value})}
+                    onChange={(e) => {
+                      // Only allow letters and spaces
+                      const value = e.target.value.replace(/[^a-zA-Z\s]/g, '');
+                      setFormData({...formData, name: value});
+                    }}
                     className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200 ${
                       formErrors.name ? 'border-red-500' : 'border-gray-300 hover:border-gray-400'
                     }`}
@@ -611,10 +642,17 @@ function ManageSuppliers() {
                   <input 
                     type="text"
                     value={formData.phone}
-                    onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200 hover:border-gray-400"
+                    onChange={(e) => {
+                      // Only allow numbers and basic phone characters
+                      const value = e.target.value.replace(/[^0-9+\-\s()]/g, '');
+                      setFormData({...formData, phone: value});
+                    }}
+                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200 ${
+                      formErrors.phone ? 'border-red-500' : 'border-gray-300 hover:border-gray-400'
+                    }`}
                     placeholder="Enter phone number"
                   />
+                  {formErrors.phone && <p className="mt-1 text-sm text-red-600">{formErrors.phone}</p>}
                 </div>
                 
                 <div>
@@ -623,20 +661,26 @@ function ManageSuppliers() {
                     type="text"
                     value={formData.contactPerson}
                     onChange={(e) => setFormData({...formData, contactPerson: e.target.value})}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200 hover:border-gray-400"
+                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200 ${
+                      formErrors.contactPerson ? 'border-red-500' : 'border-gray-300 hover:border-gray-400'
+                    }`}
                     placeholder="Enter contact person name"
                   />
+                  {formErrors.contactPerson && <p className="mt-1 text-sm text-red-600">{formErrors.contactPerson}</p>}
                 </div>
                 
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
-                  <textarea 
+                  <input 
+                    type="text"
                     value={formData.address}
                     onChange={(e) => setFormData({...formData, address: e.target.value})}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200 hover:border-gray-400"
-                    rows="2"
-                    placeholder="Enter supplier address"
-                  ></textarea>
+                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200 ${
+                      formErrors.address ? 'border-red-500' : 'border-gray-300 hover:border-gray-400'
+                    }`}
+                    placeholder="Enter address"
+                  />
+                  {formErrors.address && <p className="mt-1 text-sm text-red-600">{formErrors.address}</p>}
                 </div>
                 
                 <div className="md:col-span-2">

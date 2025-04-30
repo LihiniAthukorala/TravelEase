@@ -25,6 +25,7 @@ const ManageCampingEquipment = () => {
   });
   const [currentId, setCurrentId] = useState(null);
   const [currentImage, setCurrentImage] = useState(null);
+  const [formErrors, setFormErrors] = useState({});
 
   const categories = ['Tents', 'Sleeping Bags', 'Cooking', 'Lighting', 'Hiking', 'Other'];
 
@@ -117,9 +118,55 @@ const ManageCampingEquipment = () => {
     setIsFormOpen(true);
   };
 
+  const validateForm = () => {
+    const errors = {};
+    
+    // Name validation
+    if (!formData.name.trim()) {
+      errors.name = 'Name is required';
+    } else if (formData.name.length < 3) {
+      errors.name = 'Name must be at least 3 characters';
+    }
+
+    // Description validation
+    if (!formData.description.trim()) {
+      errors.description = 'Description is required';
+    } else if (formData.description.length < 10) {
+      errors.description = 'Description must be at least 10 characters';
+    }
+
+    // Price validation
+    if (!formData.price) {
+      errors.price = 'Price is required';
+    } else if (isNaN(formData.price) || formData.price <= 0) {
+      errors.price = 'Price must be a positive number';
+    } else if (formData.price.toString().length > 6) {
+      errors.price = 'Price cannot exceed 6 digits';
+    }
+
+    // Quantity validation
+    if (!formData.quantity) {
+      errors.quantity = 'Quantity is required';
+    } else if (isNaN(formData.quantity) || formData.quantity < 0) {
+      errors.quantity = 'Quantity must be a non-negative number';
+    }
+
+    // Category validation
+    if (!formData.category) {
+      errors.category = 'Category is required';
+    }
+
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     
+    if (!validateForm()) {
+      return;
+    }
+
     try {
       const token = localStorage.getItem('token');
       
@@ -356,9 +403,12 @@ const ManageCampingEquipment = () => {
                     name="name"
                     value={formData.name}
                     onChange={handleChange}
-                    className="w-full p-2 border border-gray-300 rounded-md"
+                    className={`w-full p-2 border ${formErrors.name ? 'border-red-500' : 'border-gray-300'} rounded-md`}
                     required
                   />
+                  {formErrors.name && (
+                    <p className="mt-1 text-sm text-red-600">{formErrors.name}</p>
+                  )}
                 </div>
                 
                 <div>
@@ -369,13 +419,16 @@ const ManageCampingEquipment = () => {
                     name="category"
                     value={formData.category}
                     onChange={handleChange}
-                    className="w-full p-2 border border-gray-300 rounded-md"
+                    className={`w-full p-2 border ${formErrors.category ? 'border-red-500' : 'border-gray-300'} rounded-md`}
                     required
                   >
                     {categories.map(cat => (
                       <option key={cat} value={cat}>{cat}</option>
                     ))}
                   </select>
+                  {formErrors.category && (
+                    <p className="mt-1 text-sm text-red-600">{formErrors.category}</p>
+                  )}
                 </div>
                 
                 <div>
@@ -389,9 +442,12 @@ const ManageCampingEquipment = () => {
                     onChange={handleChange}
                     min="0"
                     step="0.01"
-                    className="w-full p-2 border border-gray-300 rounded-md"
+                    className={`w-full p-2 border ${formErrors.price ? 'border-red-500' : 'border-gray-300'} rounded-md`}
                     required
                   />
+                  {formErrors.price && (
+                    <p className="mt-1 text-sm text-red-600">{formErrors.price}</p>
+                  )}
                 </div>
                 
                 <div>
@@ -404,9 +460,12 @@ const ManageCampingEquipment = () => {
                     value={formData.quantity}
                     onChange={handleChange}
                     min="0"
-                    className="w-full p-2 border border-gray-300 rounded-md"
+                    className={`w-full p-2 border ${formErrors.quantity ? 'border-red-500' : 'border-gray-300'} rounded-md`}
                     required
                   />
+                  {formErrors.quantity && (
+                    <p className="mt-1 text-sm text-red-600">{formErrors.quantity}</p>
+                  )}
                 </div>
                 
                 <div className="md:col-span-2">
@@ -418,9 +477,12 @@ const ManageCampingEquipment = () => {
                     value={formData.description}
                     onChange={handleChange}
                     rows="4"
-                    className="w-full p-2 border border-gray-300 rounded-md"
+                    className={`w-full p-2 border ${formErrors.description ? 'border-red-500' : 'border-gray-300'} rounded-md`}
                     required
                   ></textarea>
+                  {formErrors.description && (
+                    <p className="mt-1 text-sm text-red-600">{formErrors.description}</p>
+                  )}
                 </div>
                 
                 <div>
