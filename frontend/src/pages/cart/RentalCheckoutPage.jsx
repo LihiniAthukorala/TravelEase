@@ -73,7 +73,7 @@ const RentalCheckoutPage = () => {
       }
       setPaymentData({ ...paymentData, [name]: formattedValue });
     } else if (name === 'cvv') {
-      const digitsOnly = value.replace(/\D/g, '').substring(0, 4);
+      const digitsOnly = value.replace(/\D/g, '').substring(0, 3);
       setPaymentData({ ...paymentData, [name]: digitsOnly });
     } else {
       setPaymentData({ ...paymentData, [name]: value });
@@ -116,9 +116,9 @@ const RentalCheckoutPage = () => {
       }
     }
     
-    const cvvRegex = /^[0-9]{3,4}$/;
+    const cvvRegex = /^[0-9]{3}$/;
     if (!cvvRegex.test(paymentData.cvv)) {
-      newErrors.cvv = 'CVV must be 3 or 4 digits';
+      newErrors.cvv = 'CVV must be 3 digits';
     }
     
     setErrors(newErrors);
