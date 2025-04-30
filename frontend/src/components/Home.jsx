@@ -229,29 +229,44 @@ const Home = () => {
     <div className="min-h-screen bg-gray-50">
       {/* Hero Section */}
       <section
-        className="relative bg-cover bg-center text-white py-20 px-4"
+        className="relative bg-cover bg-center text-white py-32 px-4"
         style={{ backgroundImage: "url('https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fHx8fHx8&auto=format&fit=crop&w=1920&q=80')" }}>
-        <div className="max-w-6xl mx-auto text-center">
-          <h1 className="text-5xl font-bold mb-4">Discover Amazing Travel Planning</h1>
-          <p className="text-xl mb-8">Find and book travel experiences and get the equipment you need</p>
+        <div className="absolute inset-0 bg-black bg-opacity-50"></div>
+        <div className="max-w-6xl mx-auto text-center relative z-10">
+          <h1 className="text-6xl font-extrabold mb-6 tracking-tight leading-tight">
+            Discover Your Next <span className="text-yellow-400">Adventure</span>
+          </h1>
+          <p className="text-xl md:text-2xl mb-10 font-light max-w-2xl mx-auto leading-relaxed">
+            Find and book amazing travel experiences and get the equipment you need for your journey
+          </p>
           <form onSubmit={handleSearchSubmit} className="max-w-md mx-auto mb-8 flex">
             <input
               type="text"
               placeholder="Search events..."
-              className="flex-1 p-3 rounded-l-md focus:outline-none"
+              className="flex-1 p-4 rounded-l-md focus:outline-none text-gray-900"
               value={searchTerm}
               onChange={handleSearchChange}
             />
             <button
               type="submit"
-              className="bg-yellow-500 hover:bg-yellow-600 text-white p-3 rounded-r-md"
+              className="bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-semibold p-4 rounded-r-md transition duration-300"
             >
               Search
             </button>
           </form>
-          <div className="flex flex-wrap justify-center gap-4">
-            <Link to="/tours" className="px-6 py-3 bg-white text-blue-600 font-medium rounded-md hover:bg-gray-100 transition">Tour Plans</Link>
-            <Link to="/camping-equipment" className="px-6 py-3 bg-white text-blue-600 font-medium rounded-md hover:bg-gray-100 transition">Camping Equipment</Link>
+          <div className="flex flex-wrap justify-center gap-6">
+            <Link 
+              to="/tours" 
+              className="px-8 py-4 bg-white text-gray-900 font-semibold rounded-md hover:bg-gray-100 transition duration-300 shadow-lg hover:shadow-xl"
+            >
+              Explore Tours
+            </Link>
+            <Link 
+              to="/camping-equipment" 
+              className="px-8 py-4 bg-transparent border-2 border-white text-white font-semibold rounded-md hover:bg-white hover:text-gray-900 transition duration-300"
+            >
+              Camping Gear
+            </Link>
           </div>
         </div>
       </section>
