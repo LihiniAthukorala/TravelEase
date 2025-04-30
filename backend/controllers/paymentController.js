@@ -3,6 +3,7 @@ import Event from '../models/Event.js';
 import User from '../models/User.js';
 import Cart from '../models/Cart.js';
 import CampingEquipment from '../models/CampingEquipment.js';
+import InventoryAuditLog from '../models/InventoryAuditLog.js';
 import mongoose from 'mongoose';
 
 // Submit payment
@@ -272,9 +273,47 @@ export const approvePayment = async (req, res) => {
       }
     } 
     else if (payment.type === 'cart') {
-      // For cart payments, no event to check - just approve the payment
+      // For cart payments, update stock levels
       console.log('Processing cart payment approval');
-      // Any cart-specific logic here
+      
+      // Update stock levels for each item in the cart
+      for (const item of payment.items) {
+        const product = await CampingEquipment.findById(item.equipmentId).session(session);
+        
+        if (!product) {
+          await session.abortTransaction();
+          session.endSession();
+          return res.status(404).json({
+            success: false,
+            message: `Product with ID ${item.equipmentId} not found`
+          });
+        }
+
+        // Check if there's enough stock
+        if (product.quantity < item.quantity) {
+          await session.abortTransaction();
+          session.endSession();
+          return res.status(400).json({
+            success: false,
+            message: `Insufficient stock for product: ${product.name}. Available: ${product.quantity}, Requested: ${item.quantity}`
+          });
+        }
+
+        // Update the stock level
+        product.quantity -= item.quantity;
+        await product.save({ session });
+
+        // Create inventory audit log
+        const auditLog = new InventoryAuditLog({
+          equipment: item.equipmentId,
+          actionType: 'stock-out',
+          quantityBefore: product.quantity + item.quantity,
+          quantityAfter: product.quantity,
+          reason: 'Purchase completed',
+          performedBy: payment.user
+        });
+        await auditLog.save({ session });
+      }
     }
     else {
       // For any other payment types
